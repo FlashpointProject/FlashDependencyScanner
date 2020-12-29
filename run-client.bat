@@ -1,0 +1,1 @@
+call run.bat -subprocess -port 12345 -scanLimit 200
