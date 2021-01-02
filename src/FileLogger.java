@@ -64,4 +64,20 @@ public class FileLogger {
             e.printStackTrace();
         }
     }
+
+    public void log(String message) {
+        PrintWriter csvWriter;
+        try
+        {
+            createFile(false);
+            csvWriter = new  PrintWriter(new FileWriter(this._file, true));
+
+            csvWriter.println(message);
+            csvWriter.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
 }

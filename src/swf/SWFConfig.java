@@ -14,16 +14,17 @@ public class SWFConfig {
     private int _threadCount = 1;
     private int _processCount = 1;
     private int _processPort = 11235;
-    private boolean _parallelSpeedUp = true;
+    private boolean _parallelSpeedUp = false;
     private int _scanLimit = -1;
     private boolean _pcode = true;
     private boolean _pcodeFlag = false;
     private boolean _ascriptFlag = false;
-    private boolean _ssf = true;
+    private boolean _ssf = false;
     private OutputDetail _outputDetailLevel = OutputDetail.PATH_AND_RANK;
     private boolean _logProcessedFiles = true;
     private String _fileList = "";
-    private String _ignoreList = "";
+    private String _processedList = "processedFiles.csv";
+    private String _ignoreList = "processedFiles.csv";
     private int _rankMin = 1;
     private boolean _cliMessaging = true;
     private String _sourcePath = "";
@@ -52,6 +53,7 @@ public class SWFConfig {
         co += "\t--detail = "            + this.getOutputDetailLevel()  + "\n";
         co += "\t--logProcessedFiles = " + this.getLogProcessedFiles()  + "\n";
         co += "\t--fileList = "          + this.getFileListPath()       + "\n";
+        co += "\t--processedListPath = " + this.getIgnoreListPath()     + "\n";
         co += "\t--ignoreList = "        + this.getIgnoreListPath()     + "\n";
         co += "\t--rankMin = "           + this.getRankMin()            + "\n";
         co += "\t--CLIMessaging = "      + this.getCLIMessagingFlag()   + "\n";
@@ -150,6 +152,12 @@ public class SWFConfig {
                 case "-fl":
                 case "--fl":
                     c.setFileListPath(args[++argLen]);
+                    break;
+                case "-processedlistpath":
+                case "--processedlistpath":
+                case "-plp":
+                case "--plp":
+                    c.setProcessedListPath(args[++argLen]);
                     break;
                 case "-ignorelist":
                 case "--ignorelist":
@@ -337,6 +345,15 @@ public class SWFConfig {
             this._fileList = fileListPath;
         } else {
             //TODO: Throw error
+        }
+    }
+
+    public String getProcessedListPath() { return this._processedList; }
+    public void setProcessedListPath(String processedListPath) {
+        if(isFile(processedListPath)) {
+            this._processedList = processedListPath;
+        } else {
+            //TODO: Throw error.
         }
     }
 

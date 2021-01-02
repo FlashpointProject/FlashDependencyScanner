@@ -31,7 +31,7 @@ public class SWFDecompiler
         this._file = file;
         this._terms = new SWFTerms();
         try {
-            System.out.println(file.getPath());
+            System.out.println("Decompiling: " + file.getPath());
             this.swf = new SWF(new BufferedInputStream(new FileInputStream(file.getPath())), false);
         } catch(com.jpexs.decompiler.flash.EndOfStreamException eofse) {
             System.out.println("EndOfStreamException Error: " + file.getPath());

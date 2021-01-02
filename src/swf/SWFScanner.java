@@ -11,9 +11,11 @@ import src.sockets.*;
 public class SWFScanner {
     private SWFConfig _config;
     private List<SWFFile> _files;
+    private int _ignoreCount;
     private Set<String> _ignoreList;
     private BlockingQueue<SWFFile> _queue;
     private FileLogger _fileLogger;
+    private FileLogger _processedLogger;
     //private SWFProcessHost _ph;
     //private SWFProcessClient _pc;
     public static ExecutorService _pool;
@@ -23,6 +25,14 @@ public class SWFScanner {
         this._fileLogger = new FileLogger(c.getOutputFilePath());
         this._files = new ArrayList<SWFFile>();
         this._pool = Executors.newFixedThreadPool(c.getThreadCount());
+        this._ignoreCount = 0;
+        this._fileLogger = new FileLogger(c.getOutputFilePath());
+        this._ignoreList = new HashSet<String>();
+
+        this._processedLogger = null;
+        if(c.getProcessedListPath() != "") {
+            this._processedLogger = new FileLogger(c.getProcessedListPath());
+        }
     }
 
     public void scan() {
@@ -36,27 +46,32 @@ public class SWFScanner {
     }
 
     private void loadIgnoreList() {
-        //load the ignore list file into a string.
-        //_config.getIgnoreListPath()
-        //load the hashes into memory for checking
         if(!_config.getIsSubProcess()) {
             //Only do this if the this is NOT the sub-process
+            try {
+                Scanner s = new Scanner(new File(this._config.getIgnoreListPath()));
+                while (s.hasNextLine()){
+                    _ignoreList.add(s.nextLine());
+                }
+                s.close();
+            } catch (FileNotFoundException fnf) {
+                fnf.printStackTrace();
+            }
         }
     }
 
     private void loadFiles() {
-        System.out.println("Loading Files...");
+        //System.out.println("Loading Files...");
         if(!_config.getIsSubProcess()) {
             //Main Process logic, load like normal.
             if(!_config.getFileListPath().equals("")) {
-                //Ignore SSF
-                //Load the file and build the list.
+                //TODO: implement loading list from a file.
             }
             else if(!_config.getSourcePath().equals("")) {
                 if(_config.getSSF()) {
-                    recurseForFiles(new File(_config.getSourcePath()), "swf", 0);
+                    recurseForFiles(new File(_config.getSourcePath()), "swf", 0, 0, -1);
                 } else {
-                    _files.add(new SWFFile(_config.getSourcePath(),0));
+                    recurseForFiles(new File(_config.getSourcePath()), "swf", 0, 0, 0);
                 }
             }
             else {
@@ -68,12 +83,12 @@ public class SWFScanner {
             int limit = _config.getScanLimit();
         }
 
-        System.out.println("Files loaded with " + _files.size() + " files.");
+        System.out.println(_files.size() + " files loaded successfully.");
+        System.out.println(this._ignoreCount + " files ignored.\n");
     }
 
     private void scanFiles() {
         //For each of the files found, do stuff.
-        System.out.println(_config);
         if(_config.getMultiProcessCount() <= 1 && !_config.getIsSubProcess()) {
             //single process logic
             System.out.println("Scan started...");
@@ -84,7 +99,7 @@ public class SWFScanner {
             loadParentThreads();
         } else {
             //parent process server logic
-            System.out.println("Server Started on port " + _config.getMultiProcessPort());
+            System.out.println("Server Started on port " + _config.getMultiProcessPort() + "...");
             ServerSocket serverSocket = null;
             Socket socket = null;
 
@@ -102,7 +117,8 @@ public class SWFScanner {
                     System.out.println("I/O error: " + e);
                 }
 
-                new SocketServer(socket, _files, this._fileLogger.getFileName()).startThread();
+                _config.setOutputFilePath(this._fileLogger.getFileName());
+                new SocketServer(socket, _files, _config).startThread();
             }
         }
     }
@@ -111,10 +127,11 @@ public class SWFScanner {
         //Request file
         Client c = new Client();
         boolean conn = c.startConnection("localhost", _config.getMultiProcessPort());
+        if(conn) {
+            this._processedLogger = new FileLogger(c.getProcessedLogFile());
+            this._fileLogger = new FileLogger(c.getLogFile());
+        }
 
-        String logFile = c.getLogFile();
-        this._fileLogger = new FileLogger(logFile);
-        
         int cntr = 0;
         while(conn && cntr < _config.getScanLimit()) {
             cntr++;
@@ -128,15 +145,33 @@ public class SWFScanner {
                 //Append the output file...
                 if(newFile.getTotalRank() > 0) {
                     this._fileLogger.logFile(newFile.getPath(), newFile.getTotalRank());
-                    System.out.println(newFile.getTotalRank());
+                    System.out.println("Rank = " + newFile.getTotalRank());
                 } else {
-                    //TODO: seperate file... Scan completed, but nothing was found
+                    //Optionally output single asset games.
                 }
+
+                //System.out.println(f.getPath());
+                if(this._processedLogger != null) {
+                    this._processedLogger.log(f.getPath());
+                    System.out.println("");
+                }
+
             } catch (Exception e) {
                 //catch exception
+                System.out.println("Could not decompile");
+                //TODO: log failure here...
+
+                if(this._processedLogger != null) {
+                    this._processedLogger.log(f.getPath());
+                    System.out.println("");
+                }
             }
         }
+        //TODO: open a new command widnow here if there are still files left to get
+        //TODO: implement a socket command to get the count left.
+
         c.stopConnection();
+        System.exit(1);
     }
 
     private void loadLocalThreads() {
@@ -197,57 +232,42 @@ public class SWFScanner {
         };
     }
 
-    private Integer recurseForFiles(File startDir, String ext, Integer num) {
+    private Integer recurseForFiles(File startDir, String ext, Integer num, Integer depth, Integer maxDepth) {
         //Add the files to the queue
         Integer n = num;
+        Integer d = depth;
         try {
             File[] files = startDir.listFiles();
 			for (File file : files) {
-				if (file.isDirectory()) {
-                    n = recurseForFiles(file, ext, n);
+				if (file.isDirectory() && (maxDepth < 0 || maxDepth >= d+1)) {
+                    n = recurseForFiles(file, ext, n, d+1, maxDepth);
 				} else {
 					if(getFileExtension(file).equals(ext)) {
-                        _files.add(new SWFFile(file.getCanonicalPath(), ++n));
-                        System.out.println("File " + n + ": " + file.getCanonicalPath());
+                        String fileStr = file.getCanonicalPath();
+                        Boolean fileIgnore = false;
+                        try {
+                            fileIgnore = _ignoreList.contains(fileStr);
+                        } catch (Exception e) {
+                            //Do nothing, list was empty.
+                        }
+
+                        if(!fileIgnore) {
+                            _files.add(new SWFFile(fileStr, ++n));
+                            //System.out.println("File " + n + ": " + fileStr);
+                        } else {
+                            this._ignoreCount++;
+                            //System.out.println("File Ignored: " + fileStr);
+                        }
                     }
 				}
             }
 		} catch (Exception e) {
-            System.out.println(e);
+            System.out.println("Recurse error " + e);
 			e.printStackTrace();
         }
 
         return n;
     }
-
-    /*
-    private void scanFiles() {
-        //loop through each of the files, load them and check the hash to see if it matches the ignorelist.
-        for(int x = 0; x < _files.size()-1; x++) {
-            BufferedInputStream f = new BufferedInputStream(new FileInputStream(_files[x]));
-            if(!_ignoreList.contains(getHash(f))) {
-                //DO the decompilation
-            } else {
-                //Ignore the file, o
-            }
-        }
-    }
-    */
-
-    /*
-    private String getHash(BufferedInputStream bis) {
-        byte[] buffer= new byte[8192];
-        int count;
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        while ((count = bis.read(buffer)) > 0) {
-            digest.update(buffer, 0, count);
-        }
-        bis.close();
-    
-        byte[] hash = digest.digest();
-        return Base64.getEncoder.encodeToString(hash);
-    }
-    */
 
     private String getFileExtension(File file) {
         String fileName = file.getName();

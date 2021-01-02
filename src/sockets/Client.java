@@ -45,13 +45,29 @@ public class Client {
         return message;
     }
 
+    public String getProcessedLogFile() {
+        String message = "";
+        try {
+            sendMessage("getprocessedfile");
+            message = (String) this.ois.readObject();
+        } catch ( IOException ioe ) {
+            ioe.printStackTrace();
+        } catch ( Exception e ) {
+            e.printStackTrace();
+        }
+
+        return message;
+    }
+    
     public SWFFile getFile() {
         SWFJson swfJson = null;
         try {
             //write to socket using ObjectOutputStream
             sendMessage("getgame");
             String message = (String) this.ois.readObject();
-            swfJson = new Gson().fromJson(message, SWFJson.class);
+            if(message != "complete") {
+                swfJson = new Gson().fromJson(message, SWFJson.class);
+            }
         } catch ( IOException ioe ) {
             ioe.printStackTrace();
         } catch ( Exception e ) {
@@ -59,6 +75,8 @@ public class Client {
         }
 
         //if there are no more files, return null.
+        if(swfJson == null) return null;
+
         return new SWFFile(swfJson.path, swfJson.number);
     }
  
