@@ -20,7 +20,7 @@ public class SWFConfig {
     private boolean _pcodeFlag = false;
     private boolean _ascriptFlag = false;
     private boolean _ssf = false;
-    private OutputDetail _outputDetailLevel = OutputDetail.PATH_AND_RANK;
+    private OutputDetail _outputDetailLevel = OutputDetail.FULL_DUMP;
     private boolean _logProcessedFiles = true;
     private String _fileList = "";
     private String _processedList = "processedFiles.csv";
@@ -32,6 +32,7 @@ public class SWFConfig {
     //Sub process only variables
     private boolean _isSubProcess = false;
     private int _subProcessOffset = 0;
+    private SWFTerms _termData;
 
     public SWFConfig() {
         //Convert the default pattern, in case one is not sent in.
@@ -416,6 +417,12 @@ public class SWFConfig {
 
     public boolean getIsSubProcess()          { return this._isSubProcess; }
     public void setIsSubProcess(boolean flag) { this._isSubProcess = flag; }
+
+    public SWFTerms getTermData()          { return this._termData; }
+    public void setTermData(String path) {
+        //TODO: path is unused as the file does not exist yet. 
+        this._termData = new SWFTerms();
+    }
 
     //////////////////////////////////////////////////////////
     //------------ Private Helper Functions ----------------//

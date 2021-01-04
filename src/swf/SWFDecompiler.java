@@ -139,6 +139,7 @@ public class SWFDecompiler
             if(lcase.indexOf("new xml(") > -1 && lcase.indexOf(".load(") > -1) {
                 //Need to have new XML and .load to know it is getting an external file
                 meetsReqs = true;
+                this._file.setFoundRequiredFunc();
                 return true;
             }
         }
@@ -147,6 +148,7 @@ public class SWFDecompiler
         for(String term : _terms.getTermRequiredList()) {
             if(lcase.indexOf(term.toLowerCase()) > -1) {
                 meetsReqs = true;
+                this._file.setFoundRequiredFunc();
                 break;
             }
         }

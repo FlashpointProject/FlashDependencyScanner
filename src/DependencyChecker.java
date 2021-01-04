@@ -15,6 +15,8 @@ public class DependencyChecker {
 
         //Parse the commandline
         SWFConfig c = SWFConfig.ParseCLI(args);
+        //TODO: update the term data to use an actual path.
+        c.setTermData("");
 
         //DEBUG: Print out the commandline
         System.out.println(c);

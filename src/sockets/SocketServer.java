@@ -48,32 +48,40 @@ public class SocketServer extends Thread
             this._oos = new ObjectOutputStream(this._socket.getOutputStream());
             this._ois = new ObjectInputStream(this._socket.getInputStream());
             while( this._running ) {
-                    String message = "";
-                    try {
-                        message = (String) this._ois.readObject();
-                        if(message.equalsIgnoreCase("getgame")) {
-                            int c = _offset.getAndIncrement();
-                            System.out.println("Message Received " + c + ": " + message);
-                            if(c < _files.size()) {
-                                this._oos.writeObject(_files.get(c).toJSON());
-                            } else {
-                                this._oos.writeObject("complete");
-                                System.out.println("No files left to scan.");
-                                break;
-                            }
-                            //this._oos.writeObject("" + counter.getAndIncrement());
+                String message = "";
+                try {
+                    message = (String) this._ois.readObject();
+                    if(message.equalsIgnoreCase("getgame")) {
+                        int c = _offset.getAndIncrement();
+                        System.out.println("Message Received " + c + ": " + message);
+                        if(c < _files.size()) {
+                            this._oos.writeObject(_files.get(c).toJSON());
+                        } else {
+                            this._oos.writeObject("complete");
+                            System.out.println("No files left to scan.");
+                            break;
                         }
-                        if(message.equalsIgnoreCase("getfile")) {
-                            this._oos.writeObject(this._logFile);
-                        }
-                        if(message.equalsIgnoreCase("getprocessedfile")) {
-                            this._oos.writeObject(this._processedList);
-                        }
-                        
-                        if(message.equalsIgnoreCase("exit")) this._running = false;
-                    } catch (IOException ioe) {
-                        //EOF exception
+                        //this._oos.writeObject("" + counter.getAndIncrement());
                     }
+                    if(message.equalsIgnoreCase("getfile")) {
+                        this._oos.writeObject(this._logFile);
+                    }
+                    if(message.equalsIgnoreCase("getfilecount")) {
+                        //this._oos.writeObject(this._logFile);
+                        //TODO: this needs to be implemented.
+                    }
+                    if(message.equalsIgnoreCase("getprocessedfile")) {
+                        this._oos.writeObject(this._processedList);
+                    }
+                    
+                    if(message.equalsIgnoreCase("exit")) this._running = false;
+                } catch (IOException ioe) {
+                    try {
+                        Thread.sleep(100);
+                    } catch(InterruptedException ie) {
+                        //Do nothing.
+                    }
+                }
             }
 
             System.out.println( "Closing server..." );

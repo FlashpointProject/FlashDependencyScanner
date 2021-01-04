@@ -22,15 +22,15 @@ public class SWFTerms {
         _termRequired.add("AVURLLoader");
         _termRequired.add("NetStream");
 
-        _termRate.put("URLRequest", 4);
-        _termRate.put("URLLoader", 4);
-        _termRate.put("LoadMovie", 4);
-        _termRate.put("LoadMovieNum", 4);
-        _termRate.put("URLStream", 3);
-        _termRate.put("LoadVariables", 3);
-        _termRate.put("LoadVariablesNum", 3);
-        _termRate.put("AVURLLoader", 2);
-        _termRate.put("NetStream", 1);
+        _termRate.put("URLRequest", 0);
+        _termRate.put("URLLoader", 0);
+        _termRate.put("LoadMovie", 0);
+        _termRate.put("LoadMovieNum", 0);
+        _termRate.put("URLStream", 0);
+        _termRate.put("LoadVariables", 0);
+        _termRate.put("LoadVariablesNum", 0);
+        _termRate.put("AVURLLoader", 0);
+        _termRate.put("NetStream", 0);
         addTermRateExt(".png", 100);
         addTermRateExt(".xml", 90);
         addTermRateExt(".jpg", 90);
@@ -88,6 +88,7 @@ public class SWFTerms {
     }
 
     public int getTermRating(String term) {
+        if(_termRate.get(term) == null) { return 0; }
         return _termRate.get(term);
     }
 

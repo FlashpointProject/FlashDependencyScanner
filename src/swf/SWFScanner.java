@@ -22,16 +22,16 @@ public class SWFScanner {
 
     public SWFScanner(SWFConfig c) {
         this._config = c;
-        this._fileLogger = new FileLogger(c.getOutputFilePath());
+        this._fileLogger = new FileLogger(_config, c.getOutputFilePath());
         this._files = new ArrayList<SWFFile>();
         this._pool = Executors.newFixedThreadPool(c.getThreadCount());
         this._ignoreCount = 0;
-        this._fileLogger = new FileLogger(c.getOutputFilePath());
+        this._fileLogger = new FileLogger(_config, c.getOutputFilePath());
         this._ignoreList = new HashSet<String>();
 
         this._processedLogger = null;
         if(c.getProcessedListPath() != "") {
-            this._processedLogger = new FileLogger(c.getProcessedListPath());
+            this._processedLogger = new FileLogger(_config, c.getProcessedListPath());
         }
     }
 
@@ -127,25 +127,34 @@ public class SWFScanner {
         //Request file
         Client c = new Client();
         boolean conn = c.startConnection("localhost", _config.getMultiProcessPort());
+        boolean morefiles = true;
         if(conn) {
-            this._processedLogger = new FileLogger(c.getProcessedLogFile());
-            this._fileLogger = new FileLogger(c.getLogFile());
+            this._processedLogger = new FileLogger(_config, c.getProcessedLogFile());
+            this._fileLogger = new FileLogger(_config, c.getLogFile());
+        } else {
+            morefiles = false;
         }
 
         int cntr = 0;
         while(conn && cntr < _config.getScanLimit()) {
             cntr++;
             SWFFile f = c.getFile();
-            if(f == null) break;
+            if(f == null) {
+                f = c.getFile();
+                morefiles = false;
+                break;
+            }
             try {
                 //scan the file...
                 SWFDecompiler sd = new SWFDecompiler(f);
                 SWFFile newFile = sd.scanFile(_config.getPcode());
 
                 //Append the output file...
-                if(newFile.getTotalRank() > 0) {
-                    this._fileLogger.logFile(newFile.getPath(), newFile.getTotalRank());
-                    System.out.println("Rank = " + newFile.getTotalRank());
+                int totalRank = newFile.getTotalRank(_config.getTermData());
+                if(totalRank > 0) {
+                    this._fileLogger.logFile(newFile.getPath(), totalRank, newFile.getCountsByTerm());
+                    System.out.println("Rank  = " + totalRank);
+                    System.out.println("Terms = " + newFile.getCountsByTerm());
                 } else {
                     //Optionally output single asset games.
                 }
@@ -158,7 +167,7 @@ public class SWFScanner {
 
             } catch (Exception e) {
                 //catch exception
-                System.out.println("Could not decompile");
+                System.out.println("Could not decompile due to " + e);
                 //TODO: log failure here...
 
                 if(this._processedLogger != null) {
@@ -167,8 +176,19 @@ public class SWFScanner {
                 }
             }
         }
-        //TODO: open a new command widnow here if there are still files left to get
-        //TODO: implement a socket command to get the count left.
+
+        System.out.println("moreFiles=" + morefiles);
+        if(morefiles) {
+            //TODO: create a _config.generateCMDFlags() to do the work below.
+            try {
+                System.out.println("Kicking off next console...");
+                String cmd = "/c start cmd /K run.bat -subprocess -lpf -port " + _config.getMultiProcessPort() + " -scanLimit " + _config.getScanLimit();
+                System.out.println(cmd);
+                Runtime.getRuntime().exec(new String[] {"cmd", cmd}); 
+            } catch (IOException ioe) {
+                System.out.println("CMD error: " + ioe);
+            }
+        }
 
         c.stopConnection();
         System.exit(1);
