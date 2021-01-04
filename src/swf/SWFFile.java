@@ -73,12 +73,36 @@ public class SWFFile {
     public Integer getNumber()         { return this._number; }
     public void setNumber(Integer num) { this._number = num; }
 
-    public Integer getTotalRank() { 
+    public void setFoundRequiredFunc() {
+        this._terms.put("foundReqFunc", 1);
+    }
+
+    public Integer getTotalRank(SWFTerms termRnk) { 
         Integer rank = 0;
         for(String term : _terms.keySet()) {
-            rank += this._terms.get(term);
+            if(term == "foundReqFunc") {
+                rank++;
+            } else {
+                rank += getTermCount(term) * termRnk.getTermRating(term);
+            }
         }
         return rank;
+    }
+
+    public String getCountsByTerm() {
+        String results = "";
+        for(String term : _terms.keySet()) {
+            if(term == "foundReqFunc") {
+                //Show nothing??
+            } else {
+                if(term.startsWith(".")) {
+                    String newTerm = term.replace(".", "").replace("\"", "").replace("'", "").replace("?", "");
+                    results += newTerm + "=" + getTermCount(term) + ";";
+                }
+            }
+        }
+
+        return results;
     }
 
     public String getLogResults()             { return this._logResults;    }

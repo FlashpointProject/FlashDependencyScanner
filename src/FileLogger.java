@@ -3,14 +3,17 @@ package src;
 import java.io.*;
 import java.util.*;
 import java.text.*;
+import src.swf.*;
 
 public class FileLogger {
     private String _fileName;
     private File _file;
+    private SWFConfig _config;
 
-    public FileLogger(String fileName) {
+    public FileLogger(SWFConfig config, String fileName) {
         this._fileName = resolveName(fileName);
         this._file = new File(fileName);
+        this._config = config;
     }
 
     private String resolveName(String name) {
@@ -49,14 +52,22 @@ public class FileLogger {
         }
     }
 
-    public void logFile(String path, Integer rank) {
+    public void logFile(String path, Integer rank, String details) {
         PrintWriter csvWriter;
         try
         {
             createFile(false);
             csvWriter = new  PrintWriter(new FileWriter(this._file, true));
+            SWFConfig.OutputDetail dl = this._config.getOutputDetailLevel();
 
-            csvWriter.println("\"" + path+"\"," + rank);
+            if(dl == SWFConfig.OutputDetail.FULL_DUMP) {
+                csvWriter.println("\"" + path + "\"," + rank + ",\"" + details + "\"");
+            }
+            else if(dl == SWFConfig.OutputDetail.PATH_AND_RANK) {
+                csvWriter.println("\"" + path+"\"," + rank);
+            } else {
+                csvWriter.println("\"" + path+"\"");
+            }
             csvWriter.close();
         }
         catch (Exception e)

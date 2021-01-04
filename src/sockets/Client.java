@@ -58,7 +58,21 @@ public class Client {
 
         return message;
     }
-    
+
+    public String getFileCount() {
+        String message = "";
+        try {
+            sendMessage("getfilecount");
+            message = (String) this.ois.readObject();
+        } catch ( IOException ioe ) {
+            ioe.printStackTrace();
+        } catch ( Exception e ) {
+            e.printStackTrace();
+        }
+
+        return message;
+    }
+
     public SWFFile getFile() {
         SWFJson swfJson = null;
         try {
