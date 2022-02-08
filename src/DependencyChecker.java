@@ -25,45 +25,4 @@ public class DependencyChecker {
         SWFScanner swfc = new SWFScanner(c);
         swfc.scan();
     }
-
-    public static List<String> recurseForFiles(File dir) {
-        //Add the files to the queue
-        List<String> lst = new ArrayList<String>();
-        try {
-			File[] files = dir.listFiles();
-			for (File file : files) {
-				if (file.isDirectory()) {
-					lst.addAll(recurseForFiles(file));
-				} else {
-					if(getFileExtension(file).equals("swf")) {
-                        File f = file;
-                        lst.add(f.getCanonicalPath());
-                    }
-				}
-            }
-		} catch (Exception e) {
-			e.printStackTrace();
-        }
-
-        return lst;
-    }
-    
-    private static String getFileExtension(File file) {
-        String fileName = file.getName();
-        if(fileName.lastIndexOf(".") > 0)
-            return fileName.substring(fileName.lastIndexOf(".")+1);
-        else return "";
-    }
-
-    private static void createShutDownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable()
-        {
-
-            @Override
-            public void run()
-            {
-                if(pool != null) if(!pool.isShutdown()) pool.shutdownNow();
-            }
-        }));
-    }
 }

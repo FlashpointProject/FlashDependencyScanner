@@ -1,449 +1,289 @@
 package src.swf;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.MutuallyExclusiveGroup;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.impl.Arguments;
 
 public class SWFConfig {
     public static enum OutputDetail {
-        PATH_ONLY,
-        PATH_AND_RANK,
-        FULL_DUMP
+        PATH_VAL, // Only the path and the output value. This is the bare minimum functionality.
+        PATH_VAL_HIT, // The path, the output value, and (if applicable) what the first "hit" in each catagory was.
+        PATH_VAL_ALLHITS // The path, the output value, and (if applicable) all the hits found.
     }
 
-    private String _configPath = "";
-    private String _outputFilePath = "AtRiskFiles_<yyyy-MM-dd_HH_mm>.csv";
-    private int _threadCount = 1;
-    private int _processCount = 1;
-    private int _processPort = 11235;
-    private boolean _parallelSpeedUp = false;
-    private int _scanLimit = -1;
-    private boolean _pcode = true;
-    private boolean _pcodeFlag = false;
-    private boolean _ascriptFlag = false;
-    private boolean _ssf = false;
-    private OutputDetail _outputDetailLevel = OutputDetail.FULL_DUMP;
-    private boolean _logProcessedFiles = true;
-    private String _fileList = "";
-    private String _processedList = "processedFiles.csv";
-    private String _ignoreList = "processedFiles.csv";
-    private int _rankMin = 1;
-    private boolean _cliMessaging = true;
-    private String _sourcePath = "";
+    private BufferedWriter outputFile;
+    private ReentrantLock outputFile_lock = new ReentrantLock();
+    private int threadCount;
+    private int scanLimit;
+    private boolean pcode;
+    private boolean ssf;
+    private OutputDetail outputDetailLevel;
+    private BufferedWriter processedFile;
+    private ReentrantLock processedFile_lock = new ReentrantLock();
+    private List<String> ignoreList;
+    private List<String> files;
 
-    //Sub process only variables
-    private boolean _isSubProcess = false;
-    private int _subProcessOffset = 0;
-    private SWFTerms _termData;
+    // The constructor does nothing.
+    public SWFConfig() {}
 
-    public SWFConfig() {
-        //Convert the default pattern, in case one is not sent in.
-        this.setOutputFilePath(this._outputFilePath);
-    }
-
-    @Override
-    public String toString() {
-        String co = "Config Settings:\n";
-
-        co += "\t--config = "            + this.getConfigPath()         + "\n";
-        co += "\t--searchSubFolders = "  + this.getSSF()                + "\n";
-        co += "\t--threads = "           + this.getThreadCount()        + "\n";
-        co += "\t--multi-processes = "   + this.getMultiProcessCount()  + "\n";
-        co += "\t--parallelSpeedUp = "   + this.getParallelSpeedUp()    + "\n";
-        co += "\t--scanLimit = "         + this.getScanLimit()          + "\n";
-        co += "\t--pcode = "             + this.getPcode()              + "\n";
-        co += "\t--ascript = "           + !this.getPcode()             + "\n";
-        co += "\t--detail = "            + this.getOutputDetailLevel()  + "\n";
-        co += "\t--logProcessedFiles = " + this.getLogProcessedFiles()  + "\n";
-        co += "\t--fileList = "          + this.getFileListPath()       + "\n";
-        co += "\t--processedListPath = " + this.getIgnoreListPath()     + "\n";
-        co += "\t--ignoreList = "        + this.getIgnoreListPath()     + "\n";
-        co += "\t--rankMin = "           + this.getRankMin()            + "\n";
-        co += "\t--CLIMessaging = "      + this.getCLIMessagingFlag()   + "\n";
-        co += "\t--outputFile = "        + this.getOutputFilePath()     + "\n";
-        co += "\t--subProcess = "        + this.getIsSubProcess()       + "\n";
-        co += "\t--spOffset = "          + this.getSubProcessOffset()   + "\n";
-        co += "\tsourcePath = "          + this.getSourcePath()         + "\n";
-
-        return co;
-    }
-
+    // All the parsing is in this function.
     public static SWFConfig ParseCLI(String[] args) {
         //parse CLI to get everything...
         SWFConfig c = new SWFConfig();
-
-        int argLen = 0;
-        while(argLen <= args.length-1) {
-            //The last argument is the path to use.            
-            switch(args[argLen].toLowerCase()) {
-                case "help":
-                case "-help":
-                case "--help":
-                case "?":
-                case "-?":
-                case "--?":
-                    displayHelp();
-                    break;
-                case "generatehashlist":
-                    //generateHashList(args[++argLen]);
-                    //argLen = args.length-1;
-                    break;
-                case "-config": 
-                case "--config":
-                    c.setConfigPath(args[++argLen]);
-                    c.parseAndLoadConfig();
-                    argLen = args.length-1;
-                    break;
-                case "-searchsubfolders":
-                case "--searchsubfolders":
-                case "-ssf":
-                case "--ssf":
-                    c.setSSF(true);
-                    break;
-                case "-scanlimit":
-                case "--scanlimit":
-                case "-sl":
-                case "--sl":
-                    c.setScanLimit(args[++argLen]);
-                    break;
-                case "-threads":
-                case "--threads":
-                case "-t":
-                case "--t":
-                    c.setThreadCount(args[++argLen]);
-                    break;
-                case "-multi-process":
-                case "--multi-process":
-                case "-mp":
-                case "--mp":
-                    c.setMultiProcessCount(args[++argLen]);
-                    c.setMultiProcessPort(args[++argLen]);
-                    break;
-                case "-port":
-                case "--port":
-                    c.setMultiProcessPort(args[++argLen]);
-                case "-parallelspeedup":
-                case "--parallelspeedup":
-                case "-psu":
-                case "--psu":
-                    c.setParallelSpeedUp(true);
-                    break;
-                case "-pcode":
-                case "--pcode":
-                    c._pcodeFlag = true;
-                    c.setPcode(true);
-                    break;
-                case "-ascript":
-                case "--ascript":
-                    c._ascriptFlag = true;
-                    c.setPcode(false);
-                    break;
-                case "-detail":
-                case "--detail":
-                case "-d":
-                case "--d":
-                    c.setOutputDetailLevel(args[++argLen]);
-                    break;
-                case "-logprocessedfiles":
-                case "--logprocessedfiles":
-                case "-lpf":
-                case "--lpf":
-                    c.setLogProcessedFiles(true);
-                    break;
-                case "-filelist":
-                case "--filelist":
-                case "-fl":
-                case "--fl":
-                    c.setFileListPath(args[++argLen]);
-                    break;
-                case "-processedlistpath":
-                case "--processedlistpath":
-                case "-plp":
-                case "--plp":
-                    c.setProcessedListPath(args[++argLen]);
-                    break;
-                case "-ignorelist":
-                case "--ignorelist":
-                case "-il":
-                case "--il":
-                    c.setIgnoreListPath(args[++argLen]);
-                    break;
-                case "-rankmin":
-                case "--rankmin":
-                case "-rmin":
-                case "--rmin":
-                    c.setRankMin(args[++argLen]);
-                    break;
-                case "-climessaging":
-                case "--climessaging":
-                case "-clim":
-                case "--clim":
-                    c.setCLIMessagingFlag(true);
-                    break;
-                case "-outputfile":
-                case "--outputfile":
-                case "-of":
-                case "--of":
-                    c.setOutputFilePath(args[++argLen]);
-                    break;
-                //unlisted commands for sub-process setup.
-                case "-subprocess":
-                case "--subprocess":
-                    c.setIsSubProcess(true);
-                case "-spoffset":
-                case "--spoffset":
-                    c.setSubProcessOffset(args[argLen]);
-                default:
-                    c.setSourcePath(args[argLen]); 
-                    break;    
-            }
-
-            argLen++;
+        
+        // Use a real parser to do this. Hand-rolled stuff is great until it breaks.
+        ArgumentParser parser = ArgumentParsers.newFor("SWFDepChecker").build().defaultHelp(true).description("Checks if one or more SWFs is multi-asset.");
+        MutuallyExclusiveGroup pcode_ascript = parser.addMutuallyExclusiveGroup();
+        pcode_ascript.addArgument("--pcode").help("Decompile to P-Code, instead of ActionScript.").action(Arguments.storeConst())
+                     .dest("pcode").setConst(true).setDefault(true).type(boolean.class);
+        pcode_ascript.addArgument("--ascript").help("Decompile to ActionScript, instead of P-Code.").action(Arguments.storeConst())
+                     .dest("pcode").setConst(false).setDefault(true).type(boolean.class);
+        parser.addArgument("--ssf", "--search-subfolders").help("Search subfolders for SWFs too.").action(Arguments.storeConst())
+              .dest("ssf").setConst(true).setDefault(false).type(boolean.class);
+        parser.addArgument("--scanlimit").help("A per-thread limit on the number of SWFs scanned.").action(Arguments.store())
+              .dest("scanlimit").setDefault(-1).type(int.class);
+        // A format for the current date and time.
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+        // Set the default output filename to "SWFScan_yyyy-MM-dd_HH-mm-ss.csv".
+        parser.addArgument("-o", "--output").help("Set the file to write output to.").action(Arguments.store())
+              .dest("output").setDefault("SWFScan_"+dtf.format(LocalDateTime.now())+".csv").type(String.class);
+        // TODO: replace with -v, -vv, etc. verbosity spec?
+        parser.addArgument("-d", "--detail").help("Set the output detail level, 1-5.").action(Arguments.store())
+              .dest("detail").setDefault(1).type(int.class);
+        parser.addArgument("-t", "--threads").help("Set the number of threads to use.").action(Arguments.store())
+        .dest("threads").setDefault(1).type(int.class);
+        parser.addArgument("--ignore-list").help("Set a list of files or directories to ignore.").action(Arguments.store())
+              .dest("ignorelist").setDefault("processedfiles.csv").type(String.class);
+        parser.addArgument("--processed-log").help("Set the file to log a list of already-processed files.").action(Arguments.store())
+              .dest("processedlist").setDefault("processedfiles.csv").type(String.class);
+        // Exactly one of the two file-input methods must be used.
+        MutuallyExclusiveGroup file_list = parser.addMutuallyExclusiveGroup().required(true);
+        // Note that the type is different for these two. This makes it easy to determine which one was used.
+        file_list.addArgument("--file-list").help("A file containing a list of files or directories (if ssf is set) to scan.")
+                 .dest("filelist").action(Arguments.store()).type(String.class);
+        file_list.addArgument("file").nargs("*").help("The files or directories (if ssf is set) to scan.").dest("filelist")
+                 .action(Arguments.store()).type(List.class);
+        // The results of the parsing. Init to null.
+        Namespace results = null;
+        try {
+            results = parser.parseArgs(args);
+        } catch (ArgumentParserException e) {
+            parser.handleError(e);
+            System.exit(1);
         }
-
+        // Now to actually set all of these things.
+        c.setPcode(results.getBoolean("pcode"));;
+        c.setSSF(results.getBoolean("ssf"));
+        c.setScanLimit(results.getInt("scanlimit"));
+        c.setOutputFilePath(results.getString("output"));
+        c.setOutputDetailLevel(results.getInt("detail"));
+        c.setThreadCount(results.getInt("threads"));
+        // Note: read the ignore before opening the processed list.
+        c.setIgnoreListPath(results.getString("ignorelist"));
+        c.setProcessedListFile(results.getString("processedlist"));
+        if (results.get("filelist").getClass().equals(List.class)) {
+            c.setFileList(results.getList("filelist"));
+        } else {
+            c.setFileList(results.getString("filelist"));
+        }
         return c;
-    }
-
-    static SWFConfig getConfig(String configPath) {
-        SWFConfig c = new SWFConfig();
-        c.setConfigPath(configPath);
-
-        //Parse file using this._configPath;
-        c.parseAndLoadConfig();
-
-        return c;
-    }
-
-    private static void displayHelp() {
-        //TODO: show the CLI help...
-
-        System.exit(0);
     }
 
     //////////////////////////////////////////////////////////
     //----------- Getter and Setter Functions --------------//
     //////////////////////////////////////////////////////////
-    public String getConfigPath() { return this._configPath; }
-    public void setConfigPath(String path) {
-        if(isFile(path)) {
-            this._configPath = path;
-        } else {
-            //TODO: Throw error
-        }
+    /**
+     * Get the current list of SWFs and directories.
+     * @return The current list.
+     */
+    public List<String> getFileList() {
+        return this.files;
     }
-
-    public String getSourcePath() { return this._sourcePath; }
-    public void setSourcePath(String path) {
-        if(isFolderOrFile(path)) {
-            this._sourcePath = path;
-        } else {
-            //TODO: Throw Error
-        }
+    /**
+     * Sets the list of SWFs and directories.
+     * @param newList The list to set it to.
+     */
+    public void setFileList(List<String> newList) {
+        this.files = newList;
     }
-
-    public String getOutputFilePath() { return this._outputFilePath; }
-    public void setOutputFilePath(String filePath) {
-        //TODO check if path given is valid folder, and file is valid to be created.
-        //Find <>, take the pattern and convert current date to that format and replace everything
-        //between < and > with the result.
-        this._outputFilePath = filePath;
-    }
-
-    public int getMultiProcessCount() { return this._processCount; }
-    public void setMultiProcessCount(int count) {
-        if(count > 0) {
-            if(count > 50) { count = 50; }
-            this._processCount = count;
-        }
-    }
-    public void setMultiProcessCount(String count) {
+    /**
+     * Reads the list of SWFs and directories from a file. Exits if the reading is unsuccessful.
+     * @param listPath The path for the list of SWFs and directories.
+     */
+    public void setFileList(String listPath) {
+        // Initialize this to an empty list.
+        this.files = new ArrayList<String>();
         try {
-            int val = Integer.parseInt(count);
-            this.setMultiProcessCount(val);
-        } catch (NumberFormatException nfe) {
-            System.out.println("The flag \"multi-processor\" (-mp | -multi-processor) was used, but the value used for it was not a number.");
-            System.out.println("The correct usage is \"-mp <NUMBER>\" e.g. \"-mp 50 11235\"");
-            System.out.println("This flag will set the number of processes to be triggered for the process to use, default is 1 and 11235");
-        } catch (Exception e) {
-            e.printStackTrace();
+            // Read in all lines from the file list.
+            BufferedReader reader = new BufferedReader(new FileReader(listPath));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                this.files.add(line);
+            }
+            reader.close();
+        } catch (IOException e) {
+            // If there was an error, yell at the user.
+            System.out.println("Error while reading file list: "+e.toString());
+            System.exit(2);
         }
     }
 
-    public int getMultiProcessPort() { return this._processPort; }
-    public void setMultiProcessPort(int port) {
-        if(port <= 255) {
-            this._processPort = 11235;
-        } else {
-            this._processPort = port;
-        }
-    }
-    public void setMultiProcessPort(String port) {
+    // No more javadoc for you. You know what these do.
+    public BufferedWriter getOutputFilePath() { return this.outputFile; }
+    public void setOutputFilePath(String outputFilePath) {
         try {
-            int val = Integer.parseInt(port);
-            this.setMultiProcessPort(val);
-        } catch (NumberFormatException nfe) {
-            System.out.println("The flag \"multi-processor\" (-mp | -multi-processor) was used, but the value used for the port was not a number.");
-            System.out.println("The correct usage is \"-mp <NUMBER> <PORT>\" e.g. \"-mp 50 11235\"");
-            System.out.println("This flag will set the number of processes to be triggered for the process to use, default is 1 and 11235");
-        } catch (Exception e) {
-            e.printStackTrace();
+            this.outputFile_lock.lock();
+            // If it's non-null, close it to prevent leaks.
+            if (this.outputFile != null) {this.outputFile.close();}
+            // Open the processed list file. TODO: remember to close this at the end.
+            // Note: the second argument to FileWriter opens it append-only.
+            this.outputFile = new BufferedWriter(new FileWriter(outputFilePath, true));
+            this.outputFile_lock.unlock();
+        } catch (IOException e) {
+            this.outputFile_lock.unlock();
+            // If there was an error, yell at the user.
+            System.out.println("Error while opening the output file: "+e.toString());
+            System.exit(2);
         }
     }
-
-    public int getScanLimit()           { return this._scanLimit;  }
-    public void setScanLimit(int count) { this._scanLimit = count; }
-    public void setScanLimit(String count) {
+    /**
+     * Writes a string to the log, with the appropriate locking.
+     * @param logstr The string to write. Should have its own newlines, etc.
+     */
+    public void writeLog(String logstr) {
+        // Lock the writer.
+        this.outputFile_lock.lock();
         try {
-            int val = Integer.parseInt(count);
-            this.setScanLimit(val);
-        } catch (NumberFormatException nfe) {
-            System.out.println("The flag \"scanLimit\" (-sl | -scanLimit) was used, but the value used for it was not a number.");
-            System.out.println("The correct usage is \"-pl <NUMBER>\" e.g. \"-pl 50\"");
-            System.out.println("This flag will set the scanLimit will determine the amount of items a process can use at a time before it closes and a new process spawns, default is -1");
-        } catch (Exception e) {
-            e.printStackTrace();
+            // TODO: flush this at the end.
+            // Write the string.
+            this.outputFile.write(logstr);
+            // Unlock.
+            this.outputFile_lock.unlock();
+        } catch (IOException e) {
+            // We failed, somehow. Unlock.
+            this.outputFile_lock.unlock();
         }
     }
 
-    public int getSubProcessOffset()           { return this._subProcessOffset;  }
-    public void setSubProcessOffset(int count) { this._subProcessOffset = count; }
-    public void setSubProcessOffset(String count) {
-        try {
-            int val = Integer.parseInt(count);
-            this.setSubProcessOffset(val);
-        } catch (NumberFormatException nfe) {
-            System.out.println("setSubProcessOffset is not a number, fix it.");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    public int getScanLimit()           { return this.scanLimit;  }
+    public void setScanLimit(int count) { this.scanLimit = count; }
 
 
-    public int getThreadCount() { return this._threadCount; }
+    public int getThreadCount() { return this.threadCount; }
     public void setThreadCount(int count) {
-        if(count > 0) {
+        // Thread count must be greater than zero.
+        if (count > 0) {
+            // Cap thread count at 50.
             if(count > 50) { count = 50; }
-            this._threadCount = count;
+            this.threadCount = count;
+        } else {
+            // Minimum thread count: 1.
+            this.threadCount = 1;
         }
     }
-    public void setThreadCount(String count) {
+
+    public BufferedWriter getProcessedListFile() {
+        return this.processedFile;
+    }
+    public void setProcessedListFile(String processedListPath) {
         try {
-            int val = Integer.parseInt(count);
-            this.setThreadCount(val);
-        } catch (NumberFormatException nfe) {
-            System.out.println("The flag \"threads\" (-t | -threads) was used, but the value used for it was not a number.");
-            System.out.println("The correct usage is \"-t <NUMBER>\" e.g. \"-t 50\"");
-            System.out.println("This flag will set the number of threads for the process to use, default is 1");
-        } catch (Exception e) {
-            e.printStackTrace();
+            this.processedFile_lock.lock();
+            // If it's non-null, close it to prevent leaks.
+            if (this.processedFile != null) {this.processedFile.close();}
+            // Open the processed list file. TODO: remember to close this at the end.
+            // Note: the second argument to FileWriter opens it append-only.
+            this.processedFile = new BufferedWriter(new FileWriter(processedListPath, true));
+            this.processedFile_lock.unlock();
+        } catch (IOException e) {
+            this.processedFile_lock.unlock();
+            // If there was an error, yell at the user.
+            System.out.println("Error while opening the processed file list: "+e.toString());
+            System.exit(2);
+        }
+    }
+    /**
+     * Marks a single file as processed in the file, with the appropriate locking.
+     * @param filename The file to mark as processed.
+     * @return True if successful, false on an error.
+     */
+    public boolean markAsProcessed(String filename) {
+        // Lock the writer.
+        this.processedFile_lock.lock();
+        try {
+            // TODO: flush this at the end.
+            // Write the filename, and add a newline.
+            this.processedFile.write(filename);
+            this.processedFile.newLine();
+            // Unlock and return true.
+            this.processedFile_lock.unlock();
+            return true;
+        } catch (IOException e) {
+            // We failed, somehow. Unlock and return false.
+            this.processedFile_lock.unlock();
+            return false;
         }
     }
 
-    public boolean getParallelSpeedUp() { return this._parallelSpeedUp; }
-    public void setParallelSpeedUp(boolean flag) { this._parallelSpeedUp = flag; }
-
-    public String getFileListPath() { return this._fileList; }
-    public void setFileListPath(String fileListPath) {
-        if(isFile(fileListPath)) {
-            this._fileList = fileListPath;
-        } else {
-            //TODO: Throw error
-        }
-    }
-
-    public String getProcessedListPath() { return this._processedList; }
-    public void setProcessedListPath(String processedListPath) {
-        if(isFile(processedListPath)) {
-            this._processedList = processedListPath;
-        } else {
-            //TODO: Throw error.
-        }
-    }
-
-    public String getIgnoreListPath() { return this._ignoreList; }
+    public List<String> getIgnoreListPath() { return this.ignoreList; }
     public void setIgnoreListPath(String ignoreListPath) {
-        if(isFile(ignoreListPath)) {
-            this._ignoreList = ignoreListPath;
-        } else {
-            //TODO: Throw error.
+        // Initialize this to an empty list.
+        this.ignoreList = new ArrayList<String>();
+        try {
+            // Read in all lines from the file list.
+            BufferedReader reader = new BufferedReader(new FileReader(ignoreListPath));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                this.ignoreList.add(line);
+            }
+            reader.close();
+        } catch (IOException e) {
+            // If there was an error, yell at the user.
+            System.out.println("Error while reading ignore list: "+e.toString());
+            System.exit(2);
         }
     }
 
-    public boolean getPcode() { return this._pcode;     }
+    public boolean getPcode() { return this.pcode;     }
     public void setPcode(boolean usePcode) { 
-        if(this._pcodeFlag && this._ascriptFlag) { 
-            System.out.println("Warning: using both -pcode and -ascript will result in the last flag in the command to be used.");
-        }
-        this._pcode = usePcode; 
+        this.pcode = usePcode; 
     }
 
-    public boolean getSSF()         { return this._ssf; }
-    public void setSSF(boolean ssf) { this._ssf = ssf;  }
+    public boolean getSSF()         { return this.ssf; }
+    public void setSSF(boolean ssf) { this.ssf = ssf;  }
 
-    public OutputDetail getOutputDetailLevel()        { return this._outputDetailLevel; }
-    public void setOutputDetailLevel(OutputDetail od) { this._outputDetailLevel = od;   }
-    public void setOutputDetailLevel(String od) { 
-        switch(od.toLowerCase()) {
-            case "pathonly":
-                setOutputDetailLevel(OutputDetail.PATH_ONLY);
+    public OutputDetail getOutputDetailLevel()        { return this.outputDetailLevel; }
+    public void setOutputDetailLevel(OutputDetail od) { this.outputDetailLevel = od;   }
+    public void setOutputDetailLevel(int od) { 
+        switch(od) {
+            case 1:
+                setOutputDetailLevel(OutputDetail.PATH_VAL);
                 break;
-            case "pathandrank":
-                setOutputDetailLevel(OutputDetail.PATH_AND_RANK);
+            case 2:
+                setOutputDetailLevel(OutputDetail.PATH_VAL_HIT);
+                break;
+            case 3:
+                setOutputDetailLevel(OutputDetail.PATH_VAL_ALLHITS);
                 break;
             default:
-                setOutputDetailLevel(OutputDetail.FULL_DUMP);
+                // Should never happen: the parser should give us a nice value.
+                setOutputDetailLevel(OutputDetail.PATH_VAL);
                 break;
         }
-    }
-
-    public int getRankMin()             { return this._rankMin;                                     }
-    public void setRankMin(int minRank) { if(minRank < 0) { minRank = 0; } this._rankMin = minRank; }
-    public void setRankMin(String minRank) { 
-        try {
-            int val = Integer.parseInt(minRank);
-            this.setRankMin(val);
-        } catch (NumberFormatException nfe) {
-            System.out.println("The flag \"rankMin\" (-rmin | -rankMin) was used, but the value used for it was not a number.");
-            System.out.println("The correct usage is \"-rmin <NUMBER>\" e.g. \"-rmin 104\"");
-            System.out.println("This flag will set the number of threads for the process to use, default is 1");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public boolean getLogProcessedFiles()          { return this._logProcessedFiles; }
-    public void setLogProcessedFiles(boolean flag) { this._logProcessedFiles = flag; }
-
-    public boolean getCLIMessagingFlag()          { return this._cliMessaging; }
-    public void setCLIMessagingFlag(boolean flag) { this._cliMessaging = flag; }
-
-    public boolean getIsSubProcess()          { return this._isSubProcess; }
-    public void setIsSubProcess(boolean flag) { this._isSubProcess = flag; }
-
-    public SWFTerms getTermData()          { return this._termData; }
-    public void setTermData(String path) {
-        //TODO: path is unused as the file does not exist yet. 
-        this._termData = new SWFTerms();
-    }
-
-    //////////////////////////////////////////////////////////
-    //------------ Private Helper Functions ----------------//
-    //////////////////////////////////////////////////////////
-    private void parseAndLoadConfig() {
-        //Use this._configPath and parse it accordingly...
-        //Set all of the values based upon it.
-    }
-
-    private boolean isFolder(String path) {
-        //TODO: setup logic to check for a valid folder.
-        return true;
-    }
-
-    private boolean isFile(String path) {
-        //TODO: setup logic to check for a valid file.
-        return true;
-    }
-
-    private boolean isFolderOrFile(String path) {
-        //TODO: setup logic to check for a valid folder/file.
-        return true;
     }
 }
