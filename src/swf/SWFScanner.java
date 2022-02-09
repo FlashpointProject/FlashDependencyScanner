@@ -5,8 +5,8 @@ import java.io.*;
 
 public class SWFScanner {
     private SWFConfig config;
-    //private SWFProcessHost _ph;
-    //private SWFProcessClient _pc;
+    // private SWFProcessHost _ph;
+    // private SWFProcessClient _pc;
     public ThreadPoolExecutor fileTaskPool;
     private String ext = "swf";
     private int maxDepth;
@@ -34,7 +34,8 @@ public class SWFScanner {
             totalScanned = recurseForFiles(new File(filename), totalScanned, 0);
         }
         // Shut down the pool. Note that this prevents more tasks from being added,
-        // but doesn't discard the tasks that we already have queued. It also doesn't block.
+        // but doesn't discard the tasks that we already have queued. It also doesn't
+        // block.
         fileTaskPool.shutdown();
         // This shouldn't be very long: we have taken special care to ensure that the
         // queue doesn't grow very large.
@@ -49,7 +50,9 @@ public class SWFScanner {
     }
 
     /**
-     * Submit an swf-scanning task to the pool, blocking until enough space is available.
+     * Submit an swf-scanning task to the pool, blocking until enough space is
+     * available.
+     * 
      * @param swf The file to scan.
      */
     private void StageFileForScanning(File swf) {
@@ -67,11 +70,14 @@ public class SWFScanner {
             }
         }
         // Submit the task, when there is enough capacity.
-        fileTaskPool.submit(() -> { ScanFile(swf); });
+        fileTaskPool.submit(() -> {
+            ScanFile(swf);
+        });
     }
 
     /**
      * Scans a single file and logs the results appropriately.
+     * 
      * @param swf The file to scan.
      */
     private void ScanFile(File swf) {
@@ -82,7 +88,8 @@ public class SWFScanner {
             boolean found = dec.scanFile(this.config.getPcode());
             // Mark the file as processed (and possible ignore it for future runs).
             config.markAsProcessed(swf.getCanonicalPath());
-            // Write a relevant message to the log. The exact message will be determined by config.getOuptuDetailLevel().
+            // Write a relevant message to the log. The exact message will be determined by
+            // config.getOuptuDetailLevel().
             config.writeLog(dec.GetOutputString(found));
         } catch (Exception e) {
             synchronized (System.out) {
@@ -91,65 +98,69 @@ public class SWFScanner {
         }
 
     }
+
     /**
-     * Recursively index non-ignored filenames that end with a given extension in startDir, up to a maximum depth.
+     * Recursively index non-ignored filenames that end with a given extension in
+     * startDir, up to a maximum depth.
+     * 
      * @param startDir The directory to search in.
-     * @param ext The extension that the files should have.
-     * @param num The number of files already indexed by previous tasks.
-     * @param depth Our current depth in the filetree.
+     * @param ext      The extension that the files should have.
+     * @param num      The number of files already indexed by previous tasks.
+     * @param depth    Our current depth in the filetree.
      * @param maxDepth The maximum allowed depth in the filetree.
      * @return The total number of files indexed.
      */
     // TODO: make a prettier non-recursive wrapper for this.
-    private Integer recurseForFiles(File startDir, Integer num, Integer depth) {
+    private Integer recurseForFiles(File startFile, Integer num, Integer depth) {
         // The number of files we have picked up so far.
         Integer n = num;
         // The depth that we're currently at.
         Integer d = depth;
         try {
-            // List the files in the starting dir.
-            File[] files = startDir.listFiles();
-            // For each file in startDir,
-			for (File file : files) {
-                // If the file is a directory and we either lack a recursion limit or we haven't reached it yet,
-				if (file.isDirectory() && (maxDepth < 0 || maxDepth >= d+1)) {
-                    // Only recurse if we're scanning subdirectories and we're below the scanlimit.
-                    if (this.config.getSSF() && n < this.config.getScanLimit()) {
+            if (startFile.isDirectory()) {
+                // List the files in the starting dir.
+                File[] files = startFile.listFiles();
+                // For each file in startDir,
+                for (File file : files) {
+                    // If we either lack a recursion limit or we haven't reached it yet and we're
+                    // scanning subdirs
+                    // and we're below the scanlimit,
+                    if ((maxDepth < 0 || maxDepth >= d + 1) && this.config.getSSF() && n < this.config.getScanLimit()) {
                         // Recurse on that directory, adding one to the depth.
                         // Set the output of that to n.
-                        n = recurseForFiles(file, n, d+1);
+                        n = recurseForFiles(file, n, d + 1);
                     }
-				} else {
-                    // If the file extension matches the extension that we're searching for
-                    // and we're below the scanlimit.
-					if (getFileExtension(file).equals(ext) && n < this.config.getScanLimit()) {
-                        // Get the file's absolute, symlink-resolved path.
-                        String fileStr = file.getCanonicalPath();
-                        // By default, don't ignore the file.
-                        Boolean fileIgnore = false;
-                        try {
-                            // Try to check if the filename is in the list of ignored ones.
-                            fileIgnore = this.config.getIgnoreList().contains(fileStr);
-                        } catch (Exception e) {
-                            // Do nothing, list was empty.
-                        }
+                }
+            } else {
+                // If the file extension matches the extension that we're searching for
+                // and we're below the scanlimit.
+                if (getFileExtension(startFile).equals(ext) && n < this.config.getScanLimit()) {
+                    // Get the file's absolute, symlink-resolved path.
+                    String fileStr = startFile.getCanonicalPath();
+                    // By default, don't ignore the file.
+                    Boolean fileIgnore = false;
+                    try {
+                        // Try to check if the filename is in the list of ignored ones.
+                        fileIgnore = this.config.getIgnoreList().contains(fileStr);
+                    } catch (Exception e) {
+                        // Do nothing, list was empty.
+                    }
 
-                        // Are we ignoring the file?
-                        if (!fileIgnore) {
-                            // No, we open it and include it. TODO: can we make the actual opening be lazy?
-                            // Also, increment the file counter. Give the file this as its number.
-                            StageFileForScanning(file);
-                            //System.out.println("File " + n + ": " + fileStr);
-                        }
+                    // Are we ignoring the file?
+                    if (!fileIgnore) {
+                        // No, we open it and include it. TODO: can we make the actual opening be lazy?
+                        // Also, increment the file counter. Give the file this as its number.
+                        StageFileForScanning(startFile);
+                        // System.out.println("File " + n + ": " + fileStr);
                     }
-				}
+                }
             }
-		} catch (Exception e) {
+        } catch (Exception e) {
             // Whoops, we hit an error.
             synchronized (System.out) {
                 System.out.println("Recurse error " + e);
             }
-			e.printStackTrace();
+            e.printStackTrace();
         }
 
         // Return the number of files that we got.
@@ -158,6 +169,7 @@ public class SWFScanner {
 
     /**
      * Gets the file extension from a filepath.
+     * 
      * @param file The file that is of interest.
      * @return The file's extension.
      */
@@ -165,11 +177,12 @@ public class SWFScanner {
         // Get the file's name, including the extension.
         String fileName = file.getName();
         // If the filename contains '.',
-        if(fileName.lastIndexOf(".") > 0) {
+        if (fileName.lastIndexOf(".") > 0) {
             // Everything from the last dot until the end is the extension.
-            return fileName.substring(fileName.lastIndexOf(".")+1);
+            return fileName.substring(fileName.lastIndexOf(".") + 1);
         }
         // The file has no extension.
-        else return "";
+        else
+            return "";
     }
 }

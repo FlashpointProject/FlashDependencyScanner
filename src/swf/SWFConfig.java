@@ -57,7 +57,7 @@ public class SWFConfig {
         parser.addArgument("--max-depth").help("Set a maximum subfolder depth to search. Implies --ssf.").action(Arguments.store())
               .dest("maxdepth").setDefault(-1).type(int.class);
         parser.addArgument("--scanlimit").help("A total limit on the number of SWFs scanned.").action(Arguments.store())
-              .dest("scanlimit").setDefault(-1).type(int.class);
+              .dest("scanlimit").setDefault(Integer.MAX_VALUE).type(int.class);
         // A format for the current date and time.
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
         // Set the default output filename to "SWFScan_yyyy-MM-dd_HH-mm-ss.csv".
