@@ -3,6 +3,8 @@ package src.swf;
 import java.util.concurrent.*;
 import java.io.*;
 
+import static src.DependencyChecker.DEBUG;
+
 public class SWFScanner {
     private SWFConfig config;
     // private SWFProcessHost _ph;
@@ -82,10 +84,25 @@ public class SWFScanner {
      */
     private void ScanFile(File swf) {
         try {
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("SWFScanner.ScanFile called");
+                }
+            }
             // Create a new decompiler for it.
             SWFDecompiler dec = new SWFDecompiler(swf, this.config.getOutputDetailLevel());
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("created dec.");
+                }
+            }
             // Decompile and search the file for terms.
             boolean found = dec.scanFile(this.config.getPcode());
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("Done, found = " + (found ? 1 : 0));
+                }
+            }
             // Mark the file as processed (and possible ignore it for future runs).
             config.markAsProcessed(swf.getCanonicalPath());
             // Write a relevant message to the log. The exact message will be determined by

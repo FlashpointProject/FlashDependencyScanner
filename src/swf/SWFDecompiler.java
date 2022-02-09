@@ -20,6 +20,7 @@ import com.jpexs.decompiler.flash.tags.ABCContainerTag;
 import com.jpexs.decompiler.flash.tags.base.ASMSource;
 
 import src.swf.SWFConfig.OutputDetail;
+import static src.DependencyChecker.DEBUG;
 
 public class SWFDecompiler {
     // DeobfuscationLevel level = DeobfuscationLevel.getByLevel(1);
@@ -30,24 +31,46 @@ public class SWFDecompiler {
     // swf.assignClassesToSymbols();
     private SWF swf;
     private SWFTerms terms;
-    private Map<String,Integer> term_freq;
+    private Map<String, Integer> term_freq;
     private OutputDetail loglevel;
     private String filepath;
 
     public SWFDecompiler(File infile, OutputDetail detail) {
         this.terms = new SWFTerms();
-        this.term_freq = new HashMap<String,Integer>();
+        this.term_freq = new HashMap<String, Integer>();
         this.loglevel = detail;
         try {
-            synchronized (System.out) {
-                System.out.println("Decompiling: " + infile.getPath());
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("Decompiling: " + infile.getPath());
+                }
             }
             // Use jpexs to decompile the swf.
             BufferedInputStream swf_stream = new BufferedInputStream(new FileInputStream(infile.getPath()));
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("opened stream.");
+                }
+            }
             this.swf = new SWF(swf_stream, false);
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("Created SWF object.");
+                }
+            }
             swf_stream.close();
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("closed stream.");
+                }
+            }
             this.filepath = infile.getCanonicalPath();
-            
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("set filepath");
+                }
+            }
+
         } catch (com.jpexs.decompiler.flash.EndOfStreamException eofse) {
             synchronized (System.out) {
                 System.out.println("EndOfStreamException Error: " + infile.getPath());
@@ -68,7 +91,9 @@ public class SWFDecompiler {
     }
 
     /**
-     * Get the string that should be printed to output. This will depend on the loglevel.
+     * Get the string that should be printed to output. This will depend on the
+     * loglevel.
+     * 
      * @param found Whether or not something was actually found.
      * @return The correct string to output for this loglevel.
      */
@@ -85,14 +110,15 @@ public class SWFDecompiler {
     /**
      * Get the list of terms and their frequencies, formatted for log output.
      * Remember, term_freq will only have one element if we're on PATH_VAL_HIT mode.
-     * @return A string with the following format: each term is represented as "term:count", 
-     * and different terms are separated by semicolons.
+     * 
+     * @return A string with the following format: each term is represented as
+     *         "term:count", and different terms are separated by semicolons.
      */
     public String joinTermMap() {
         // Start off with an empty string.
         StringBuilder out = new StringBuilder("");
         // For each entry,
-        for (Map.Entry<String,Integer> entry : term_freq.entrySet()) {
+        for (Map.Entry<String, Integer> entry : term_freq.entrySet()) {
             // Add it to the string.
             out.append(entry.getKey() + ':' + entry.getValue() + ';');
         }
@@ -102,6 +128,7 @@ public class SWFDecompiler {
 
     /**
      * Return if this object's SWF uses ActionScript 3.
+     * 
      * @return See above.
      */
     public Boolean isAS3() {
@@ -110,11 +137,17 @@ public class SWFDecompiler {
 
     /**
      * Scans a file for external imports.
+     * 
      * @param getPcode If true, decompile to pcode instead of actionscript.
      * @return True if the game is multi-asset, false if the game is single-asset.
      * @throws Exception If an error occured.
      */
     public boolean scanFile(Boolean getPcode) throws Exception {
+        if (DEBUG) {
+            synchronized (System.out) {
+                System.out.println("SWFDecompiler.scanFile called");
+            }
+        }
         // Set the export mode...
         ScriptExportMode sem;
         if (getPcode) {
@@ -154,7 +187,8 @@ public class SWFDecompiler {
                     }
 
                     en.toSource(htw, abc.script_info.get(s).traits.traits, new ConvertData(), sem, false);
-                    // found gets or-ed with the result. If we found something and we're not looking for more,
+                    // found gets or-ed with the result. If we found something and we're not looking
+                    // for more,
                     if ((found |= scanScript(htw.toString())) && loglevel != OutputDetail.PATH_VAL_ALLHITS) {
                         // Bail out.
                         return true;
@@ -243,7 +277,8 @@ public class SWFDecompiler {
 
     /**
      * Search for a given word in the script.
-     * @param word The word to search for.
+     * 
+     * @param word   The word to search for.
      * @param script The script to search.
      * @return True if we found something, false otherwise.
      */
@@ -280,6 +315,7 @@ public class SWFDecompiler {
 
     /**
      * Increment by one the number of times that a term was found.
+     * 
      * @param term The term to increment the count for.
      */
     public void addTerm(String term) {
