@@ -74,7 +74,7 @@ public class SWFConfig {
               .dest("processedlist").setDefault("processedfiles.csv").type(String.class);
         // Note that the type is different for these two. This makes it easy to determine which one was used.
         parser.addArgument("--file-list").help("A file containing a list of files or directories (if ssf is set) to scan.")
-                 .dest("filelist-file").action(Arguments.store()).type(String.class);
+                 .dest("filelist").action(Arguments.store()).type(String.class);
         parser.addArgument("file").nargs("*").help("The files or directories (if ssf is set) to scan.").dest("file")
                  .action(Arguments.store()).setDefault(new ArrayList<String>()).type(List.class);
         // The results of the parsing. Init to null.
