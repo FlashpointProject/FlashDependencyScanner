@@ -2,12 +2,9 @@ package src.swf;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -23,7 +20,7 @@ import net.sourceforge.argparse4j.impl.Arguments;
 public class SWFConfig {
     public static enum OutputDetail {
         PATH_VAL, // Only the path and the output value. This is the bare minimum functionality.
-        PATH_VAL_HIT, // The path, the output value, and (if applicable) what the first "hit" in each catagory was.
+        PATH_VAL_HIT, // The path, the output value, and (if applicable) which function was hit.
         PATH_VAL_ALLHITS // The path, the output value, and (if applicable) all the hits found.
     }
 
@@ -33,6 +30,7 @@ public class SWFConfig {
     private int scanLimit;
     private boolean pcode;
     private boolean ssf;
+    private int maxDepth;
     private OutputDetail outputDetailLevel;
     private BufferedWriter processedFile;
     private ReentrantLock processedFile_lock = new ReentrantLock();
@@ -56,7 +54,9 @@ public class SWFConfig {
                      .dest("pcode").setConst(false).setDefault(true).type(boolean.class);
         parser.addArgument("--ssf", "--search-subfolders").help("Search subfolders for SWFs too.").action(Arguments.storeConst())
               .dest("ssf").setConst(true).setDefault(false).type(boolean.class);
-        parser.addArgument("--scanlimit").help("A per-thread limit on the number of SWFs scanned.").action(Arguments.store())
+        parser.addArgument("--max-depth").help("Set a maximum subfolder depth to search. Implies --ssf.").action(Arguments.store())
+              .dest("maxdepth").setDefault(-1).type(int.class);
+        parser.addArgument("--scanlimit").help("A total limit on the number of SWFs scanned.").action(Arguments.store())
               .dest("scanlimit").setDefault(-1).type(int.class);
         // A format for the current date and time.
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
@@ -68,7 +68,7 @@ public class SWFConfig {
               .dest("detail").setDefault(1).type(int.class);
         parser.addArgument("-t", "--threads").help("Set the number of threads to use.").action(Arguments.store())
         .dest("threads").setDefault(1).type(int.class);
-        parser.addArgument("--ignore-list").help("Set a list of files or directories to ignore.").action(Arguments.store())
+        parser.addArgument("--ignore-list").help("Set a file containing a list of absolute paths to ignore.").action(Arguments.store())
               .dest("ignorelist").setDefault("processedfiles.csv").type(String.class);
         parser.addArgument("--processed-log").help("Set the file to log a list of already-processed files.").action(Arguments.store())
               .dest("processedlist").setDefault("processedfiles.csv").type(String.class);
@@ -88,22 +88,46 @@ public class SWFConfig {
             System.exit(1);
         }
         // Now to actually set all of these things.
-        c.setPcode(results.getBoolean("pcode"));;
-        c.setSSF(results.getBoolean("ssf"));
+        c.setPcode(results.getBoolean("pcode")); // Implemented
+        c.setSSF(results.getBoolean("ssf")); // Implemented.
+        c.setMaxDepth(results.getInt("maxdepth")); // Implemented.
         c.setScanLimit(results.getInt("scanlimit"));
-        c.setOutputFilePath(results.getString("output"));
-        c.setOutputDetailLevel(results.getInt("detail"));
-        c.setThreadCount(results.getInt("threads"));
+        c.setOutputFilePath(results.getString("output")); // Implemented.
+        c.setOutputDetailLevel(results.getInt("detail")); // Implemented.
+        c.setThreadCount(results.getInt("threads")); // Implemented.
         // Note: read the ignore before opening the processed list.
-        c.setIgnoreListPath(results.getString("ignorelist"));
-        c.setProcessedListFile(results.getString("processedlist"));
+        c.setIgnoreListPath(results.getString("ignorelist")); // Implemented
+        c.setProcessedListFile(results.getString("processedlist")); // Implemented.
         if (results.get("filelist").getClass().equals(List.class)) {
-            c.setFileList(results.getList("filelist"));
+            c.setFileList(results.getList("filelist")); // Implemented.
         } else {
-            c.setFileList(results.getString("filelist"));
+            c.setFileList(results.getString("filelist")); // Implemented.
         }
         return c;
     }
+
+    /**
+     * Does EOL tasks for this object - closing files, etc.
+     */
+    public void cleanUp() {
+        outputFile_lock.lock();
+        try {
+            // Try to close the file.
+            outputFile.close();
+            // If it's already closed, we get an IOException. Just carry on.
+        } catch (IOException e) {}
+        outputFile_lock.unlock();
+        // Now for the processed file.
+        processedFile_lock.lock();
+        try {
+            // Try to close the file.
+            processedFile.close();
+            // If it's already closed, we get an IOException. Just carry on.
+        } catch (IOException e) {}
+        processedFile_lock.unlock();
+        // All the rest of the stuff will be cleaned up by the GC.
+    }
+
 
     //////////////////////////////////////////////////////////
     //----------- Getter and Setter Functions --------------//
@@ -240,7 +264,7 @@ public class SWFConfig {
         }
     }
 
-    public List<String> getIgnoreListPath() { return this.ignoreList; }
+    public List<String> getIgnoreList() { return this.ignoreList; }
     public void setIgnoreListPath(String ignoreListPath) {
         // Initialize this to an empty list.
         this.ignoreList = new ArrayList<String>();
@@ -267,6 +291,16 @@ public class SWFConfig {
     public boolean getSSF()         { return this.ssf; }
     public void setSSF(boolean ssf) { this.ssf = ssf;  }
 
+    public int getMaxDepth() { return this.maxDepth; }
+    public void setMaxDepth(int maxdepth) {
+        // If we're getting a non-default value,
+        if (maxdepth != -1) {
+            // Set ssf to true.
+            this.setSSF(true);            
+        }
+        // Set the value.
+        this.maxDepth =  maxdepth;
+    }
     public OutputDetail getOutputDetailLevel()        { return this.outputDetailLevel; }
     public void setOutputDetailLevel(OutputDetail od) { this.outputDetailLevel = od;   }
     public void setOutputDetailLevel(int od) { 
