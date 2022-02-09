@@ -76,7 +76,7 @@ public class SWFConfig {
         parser.addArgument("--file-list").help("A file containing a list of files or directories (if ssf is set) to scan.")
                  .dest("filelist").action(Arguments.store()).type(String.class);
         parser.addArgument("file").nargs("*").help("The files or directories (if ssf is set) to scan.").dest("file")
-                 .action(Arguments.store()).setDefault(new ArrayList<String>()).type(List.class);
+                 .action(Arguments.store());
         // The results of the parsing. Init to null.
         Namespace results = null;
         try {
@@ -96,8 +96,8 @@ public class SWFConfig {
         // Note: read the ignore before opening the processed list.
         c.setIgnoreListPath(results.getString("ignorelist")); // Implemented
         c.setProcessedListFile(results.getString("processedlist")); // Implemented.
-        c.appendFileList(results.getList("filelist-list")); // Implemented.
-        c.appendFileList(results.getString("filelist-file")); // Implemented.
+        c.appendFileList(results.getList("file")); // Implemented.
+        c.appendFileList(results.getString("filelist")); // Implemented.
         return c;
     }
 
@@ -139,6 +139,10 @@ public class SWFConfig {
      * @param newList The list to append.
      */
     public void appendFileList(List<String> newList) {
+        if (newList == null) {
+            //System.out.println("Error: newList null!");
+            return;
+        }
         this.files.addAll(newList);
     }
     /**
@@ -147,6 +151,10 @@ public class SWFConfig {
      * @param listPath The path for the list of SWFs and directories.
      */
     public void appendFileList(String listPath) {
+        if (listPath == null) {
+            //System.out.println("Error: listPath null!");
+            return;
+        }
         try {
             // Read in all lines from the file list.
             BufferedReader reader = new BufferedReader(new FileReader(listPath));
