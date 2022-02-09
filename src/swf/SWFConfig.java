@@ -35,7 +35,7 @@ public class SWFConfig {
     private BufferedWriter processedFile;
     private ReentrantLock processedFile_lock = new ReentrantLock();
     private List<String> ignoreList;
-    private List<String> files;
+    private List<String> files = new ArrayList<String>();
 
     // The constructor does nothing.
     public SWFConfig() {}
@@ -49,9 +49,9 @@ public class SWFConfig {
         ArgumentParser parser = ArgumentParsers.newFor("SWFDepChecker").build().defaultHelp(true).description("Checks if one or more SWFs is multi-asset.");
         MutuallyExclusiveGroup pcode_ascript = parser.addMutuallyExclusiveGroup();
         pcode_ascript.addArgument("--pcode").help("Decompile to P-Code, instead of ActionScript.").action(Arguments.storeConst())
-                     .dest("pcode").setConst(true).setDefault(true).type(boolean.class);
+                     .dest("pcode").setConst("pcode").setDefault("pcode").type(String.class);
         pcode_ascript.addArgument("--ascript").help("Decompile to ActionScript, instead of P-Code.").action(Arguments.storeConst())
-                     .dest("pcode").setConst(false).setDefault(true).type(boolean.class);
+                     .dest("pcode").setConst("ascript").setDefault("pcode").type(String.class);
         parser.addArgument("--ssf", "--search-subfolders").help("Search subfolders for SWFs too.").action(Arguments.storeConst())
               .dest("ssf").setConst(true).setDefault(false).type(boolean.class);
         parser.addArgument("--max-depth").help("Set a maximum subfolder depth to search. Implies --ssf.").action(Arguments.store())
@@ -72,13 +72,11 @@ public class SWFConfig {
               .dest("ignorelist").setDefault("processedfiles.csv").type(String.class);
         parser.addArgument("--processed-log").help("Set the file to log a list of already-processed files.").action(Arguments.store())
               .dest("processedlist").setDefault("processedfiles.csv").type(String.class);
-        // Exactly one of the two file-input methods must be used.
-        MutuallyExclusiveGroup file_list = parser.addMutuallyExclusiveGroup().required(true);
         // Note that the type is different for these two. This makes it easy to determine which one was used.
-        file_list.addArgument("--file-list").help("A file containing a list of files or directories (if ssf is set) to scan.")
-                 .dest("filelist").action(Arguments.store()).type(String.class);
-        file_list.addArgument("file").nargs("*").help("The files or directories (if ssf is set) to scan.").dest("filelist")
-                 .action(Arguments.store()).type(List.class);
+        parser.addArgument("--file-list").help("A file containing a list of files or directories (if ssf is set) to scan.")
+                 .dest("filelist-file").action(Arguments.store()).type(String.class);
+        parser.addArgument("file").nargs("*").help("The files or directories (if ssf is set) to scan.").dest("file")
+                 .action(Arguments.store()).setDefault(new ArrayList<String>()).type(List.class);
         // The results of the parsing. Init to null.
         Namespace results = null;
         try {
@@ -88,21 +86,18 @@ public class SWFConfig {
             System.exit(1);
         }
         // Now to actually set all of these things.
-        c.setPcode(results.getBoolean("pcode")); // Implemented
+        c.setPcode(results.getString("pcode").equals("pcode")); // Implemented
         c.setSSF(results.getBoolean("ssf")); // Implemented.
         c.setMaxDepth(results.getInt("maxdepth")); // Implemented.
-        c.setScanLimit(results.getInt("scanlimit"));
+        c.setScanLimit(results.getInt("scanlimit")); // Implemented.
         c.setOutputFilePath(results.getString("output")); // Implemented.
         c.setOutputDetailLevel(results.getInt("detail")); // Implemented.
         c.setThreadCount(results.getInt("threads")); // Implemented.
         // Note: read the ignore before opening the processed list.
         c.setIgnoreListPath(results.getString("ignorelist")); // Implemented
         c.setProcessedListFile(results.getString("processedlist")); // Implemented.
-        if (results.get("filelist").getClass().equals(List.class)) {
-            c.setFileList(results.getList("filelist")); // Implemented.
-        } else {
-            c.setFileList(results.getString("filelist")); // Implemented.
-        }
+        c.appendFileList(results.getList("filelist-list")); // Implemented.
+        c.appendFileList(results.getString("filelist-file")); // Implemented.
         return c;
     }
 
@@ -140,19 +135,18 @@ public class SWFConfig {
         return this.files;
     }
     /**
-     * Sets the list of SWFs and directories.
-     * @param newList The list to set it to.
+     * Appends to the list of SWFs and directories.
+     * @param newList The list to append.
      */
-    public void setFileList(List<String> newList) {
-        this.files = newList;
+    public void appendFileList(List<String> newList) {
+        this.files.addAll(newList);
     }
     /**
-     * Reads the list of SWFs and directories from a file. Exits if the reading is unsuccessful.
+     * Reads a list of SWFs and directories from a file. Exits if the reading is unsuccessful.
+     * Each element in that list is appended to the internal file list.
      * @param listPath The path for the list of SWFs and directories.
      */
-    public void setFileList(String listPath) {
-        // Initialize this to an empty list.
-        this.files = new ArrayList<String>();
+    public void appendFileList(String listPath) {
         try {
             // Read in all lines from the file list.
             BufferedReader reader = new BufferedReader(new FileReader(listPath));
