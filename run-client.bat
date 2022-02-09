@@ -1,1 +1,0 @@
-call run.bat -subprocess -lpf -port 12345 -scanLimit 50

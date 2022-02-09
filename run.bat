@@ -1,2 +1,2 @@
-java -jar build\bin\test.jar %*
+java -jar build\bin\flashdeps.jar %*
 exit
