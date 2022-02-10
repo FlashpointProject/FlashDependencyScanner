@@ -35,12 +35,22 @@ public class SWFScanner {
             // Scan it, and record the number of files scanned.
             totalScanned = recurseForFiles(new File(filename), totalScanned, 0);
         }
+        if (DEBUG) {
+            synchronized (System.out) {
+                System.out.println("Done recursing.");
+            }
+        }
         // Shut down the pool. Note that this prevents more tasks from being added,
         // but doesn't discard the tasks that we already have queued. It also doesn't
         // block.
         fileTaskPool.shutdown();
         // This shouldn't be very long: we have taken special care to ensure that the
         // queue doesn't grow very large.
+        if (DEBUG) {
+            synchronized (System.out) {
+                System.out.println("waiting for tasks to complete.");
+            }
+        }
         try {
             fileTaskPool.awaitTermination(poolWaitTime, TimeUnit.HOURS);
         } catch (InterruptedException e) {
@@ -105,9 +115,19 @@ public class SWFScanner {
             }
             // Mark the file as processed (and possible ignore it for future runs).
             config.markAsProcessed(swf.getCanonicalPath());
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("marked as processed.");
+                }
+            }
             // Write a relevant message to the log. The exact message will be determined by
             // config.getOuptuDetailLevel().
             config.writeLog(dec.GetOutputString(found));
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("wrote to log.");
+                }
+            }
         } catch (Exception e) {
             synchronized (System.out) {
                 System.out.println("Error scanning file: " + e.toString());
