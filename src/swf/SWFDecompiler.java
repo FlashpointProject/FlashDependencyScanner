@@ -35,8 +35,8 @@ public class SWFDecompiler {
     private OutputDetail loglevel;
     private String filepath;
 
-    public SWFDecompiler(File infile, OutputDetail detail) {
-        this.terms = new SWFTerms();
+    public SWFDecompiler(File infile, OutputDetail detail, SWFTerms inputTerms) {
+        this.terms = inputTerms;
         this.term_freq = new HashMap<String, Integer>();
         this.loglevel = detail;
         try {

@@ -36,14 +36,16 @@ public class SWFConfig {
     private ReentrantLock processedFile_lock = new ReentrantLock();
     private List<String> ignoreList;
     private List<String> files = new ArrayList<String>();
+    public final SWFTerms terms;
 
-    // The constructor does nothing.
-    public SWFConfig() {}
+    // The constructor sets terms only.
+    public SWFConfig(SWFTerms inputTerms) {
+        this.terms = inputTerms;
+    }
 
     // All the parsing is in this function.
     public static SWFConfig ParseCLI(String[] args) {
         //parse CLI to get everything...
-        SWFConfig c = new SWFConfig();
         
         // Use a real parser to do this. Hand-rolled stuff is great until it breaks.
         ArgumentParser parser = ArgumentParsers.newFor("SWFDepChecker").build().defaultHelp(true).description("Checks if one or more SWFs is multi-asset.");
@@ -72,6 +74,8 @@ public class SWFConfig {
               .dest("ignorelist").setDefault("processedfiles.csv").type(String.class);
         parser.addArgument("--processed-log").help("Set the file to log a list of already-processed files.").action(Arguments.store())
               .dest("processedlist").setDefault("processedfiles.csv").type(String.class);
+        parser.addArgument("--terms-file").help("Set the name of the json file from which we should load terms.").action(Arguments.store())
+              .dest("jsonfile").setDefault("terms.json").type(String.class);
         // Note that the type is different for these two. This makes it easy to determine which one was used.
         parser.addArgument("--file-list").help("A file containing a list of files or directories (if ssf is set) to scan.")
                  .dest("filelist").action(Arguments.store()).type(String.class);
@@ -85,6 +89,8 @@ public class SWFConfig {
             parser.handleError(e);
             System.exit(1);
         }
+        // We have to do this first: it's declared final.
+        SWFConfig c = new SWFConfig(readJsonFile(results.getString("jsonfile")));
         // Now to actually set all of these things.
         c.setPcode(results.getString("pcode").equals("pcode")); // Implemented
         c.setSSF(results.getBoolean("ssf")); // Implemented.
@@ -99,6 +105,37 @@ public class SWFConfig {
         c.appendFileList(results.getList("file")); // Implemented.
         c.appendFileList(results.getString("filelist")); // Implemented.
         return c;
+    }
+
+    /**
+     * Read the JSON file and generate and SWFTerms object from it.
+     * @param filename The json file containing the SWFTerms data.
+     * @return An SWFTerms object.
+     */
+    public static SWFTerms readJsonFile(String filename) {
+        try {
+            StringBuilder fileContents = new StringBuilder();
+            // Create an SWFTerms from the file's contents.
+            BufferedReader jsonfile = new BufferedReader(new FileReader(filename));
+
+            // Read the file line by line.
+            String currentLine;
+            while ((currentLine = jsonfile.readLine()) != null) {
+                // JSON shouldn't care about newlines, so they're fine to leave off.
+                fileContents.append(currentLine);
+            }
+            jsonfile.close();
+            // Construct the SWFTerms object.
+            return new SWFTerms(fileContents.toString());
+        } catch (IOException e) {
+            // If we fail, print an error and bail out.
+            synchronized (System.out) {
+                System.out.println("Error while opening JSON file: " + e.toString());
+            }
+            System.exit(2);
+        }
+        // Unreachable, but it makes the compiler happy.
+        return null;
     }
 
     /**
@@ -287,7 +324,6 @@ public class SWFConfig {
         // Lock the writer.
         this.processedFile_lock.lock();
         try {
-            // TODO: flush this at the end.
             // Write the filename, and add a newline.
             this.processedFile.write(filename);
             this.processedFile.newLine();

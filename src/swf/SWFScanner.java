@@ -109,7 +109,7 @@ public class SWFScanner {
                 }
             }
             // Create a new decompiler for it.
-            SWFDecompiler dec = new SWFDecompiler(swf, this.config.getOutputDetailLevel());
+            SWFDecompiler dec = new SWFDecompiler(swf, this.config.getOutputDetailLevel(), this.config.terms);
             if (DEBUG) {
                 synchronized (System.out) {
                     System.out.println("created dec.");

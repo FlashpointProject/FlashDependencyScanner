@@ -1,16 +1,36 @@
 package src.swf;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import org.json.JSONObject;
 
 public class SWFTerms {
     private List<String> _termRate;
     private List<String> _termRequired;
 
     //TODO: make this use regex for a "fast vs more accurate vs most accurate"
-    public SWFTerms() {
+    public SWFTerms(String jsonString) {
+        // Init the arrays to empty.
         _termRequired = new ArrayList<String>();
         _termRate = new ArrayList<String>();
-
+        
+        // Convert the jsonString to a JSONObject.
+        JSONObject terms = new JSONObject(jsonString);
+        // Get the three relevant arrays.
+        /*JSONArray requiredTerms = terms.getJSONArray("requiredTerms");
+        for (int i = 0; i < requiredTerms.length(); i++) {
+            _termRequired.add(requiredTerms.getString(i));
+        }*/
+        for (Object element : terms.getJSONArray("requiredTerms").toList()) {
+            _termRequired.add((String)element);
+        }
+        for (Object element : terms.getJSONArray("hitTerms").toList()) {
+            _termRate.add((String)element);
+        }
+        for (Object element : terms.getJSONArray("hitExtensions").toList()) {
+            addTermRateExt((String)element);
+        }
+        /*
         _termRequired.add("URLRequest");
         _termRequired.add("URLLoader");
         _termRequired.add("LoadMovie");
@@ -80,6 +100,7 @@ public class SWFTerms {
         addTermRateExt(".hx");;
         addTermRateExt(".properties");
         addTermRateExt(".db");
+        */
     }
 
     public void addTermRateExt(String term) {
