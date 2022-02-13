@@ -188,6 +188,24 @@ public class SWFConfig {
             System.exit(2);
         }
     }
+
+    /**
+     * Flushes the logfile's writer.
+     */
+    public void flushLog() {
+        // Lock the writer.
+        this.outputFile_lock.lock();
+        try {
+            // Flush the writer.
+            this.outputFile.flush();
+            // We're done, unlock.
+            this.outputFile_lock.unlock();
+        } catch (IOException e) {
+            // We failed, somehow. Unlock.
+            this.outputFile_lock.unlock();
+        }
+    }
+
     /**
      * Writes a string to the log, with the appropriate locking.
      * @param logstr The string to write. Should have its own newlines, etc.
@@ -196,7 +214,6 @@ public class SWFConfig {
         // Lock the writer.
         this.outputFile_lock.lock();
         try {
-            // TODO: flush this at the end.
             // Write the string.
             this.outputFile.write(logstr);
             // Unlock.
@@ -243,6 +260,24 @@ public class SWFConfig {
             System.exit(2);
         }
     }
+
+    /**
+     * Flushes the processed-file's writer.
+     */
+    public void flushProcessed() {
+        // Lock the writer.
+        this.processedFile_lock.lock();
+        try {
+            // Flush the writer.
+            this.processedFile.flush();
+            // We're done, unlock.
+            this.processedFile_lock.unlock();
+        } catch (IOException e) {
+            // We failed, somehow. Unlock.
+            this.processedFile_lock.unlock();
+        }
+    }
+
     /**
      * Marks a single file as processed in the file, with the appropriate locking.
      * @param filename The file to mark as processed.

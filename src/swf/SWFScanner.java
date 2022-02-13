@@ -52,7 +52,16 @@ public class SWFScanner {
             }
         }
         try {
-            fileTaskPool.awaitTermination(poolWaitTime, TimeUnit.HOURS);
+            // This condition should take 20 minutes to evaluate, at minimum.
+            // Whenever it gets a timeout, it will return false, and loop around.
+            // Whenever the pool actually terminates, it will return true, and continue.
+            while (!fileTaskPool.awaitTermination(20, TimeUnit.MINUTES)) {
+                // Every 20 minutes that we're waiting for the pool to terminate,
+                // flush all the relevant logs and stuff. That way, we can
+                // safely interrupt after waiting a reasonable amount of time.
+                this.config.flushLog();
+                this.config.flushProcessed();
+            }
         } catch (InterruptedException e) {
             synchronized (System.out) {
                 System.out.println("awaitTermination interrupted, exiting!");
