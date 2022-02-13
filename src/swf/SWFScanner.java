@@ -14,8 +14,8 @@ public class SWFScanner {
     private int maxDepth;
     // The number of tasks to keep around per thread in the queue.
     public static final int maxQueueFactor = 20;
-    // The amount of time, in hours, to wait for fileTaskPool to exit.
-    public static final int poolWaitTime = 1000;
+    // The increment of time, in minutes, to wait between log flushes when the pool is exiting.
+    public static final int poolWaitTime = 20;
 
     public SWFScanner(SWFConfig c) {
         this.config = c;
@@ -52,10 +52,11 @@ public class SWFScanner {
             }
         }
         try {
-            // This condition should take 20 minutes to evaluate, at minimum.
+            // This condition should take poolWaitTime minutes to evaluate, at maximum.
             // Whenever it gets a timeout, it will return false, and loop around.
             // Whenever the pool actually terminates, it will return true, and continue.
-            while (!fileTaskPool.awaitTermination(20, TimeUnit.MINUTES)) {
+            // If it just terminates nicely on the first try, fear not: the files are flushed at closing time, later on.
+            while (!fileTaskPool.awaitTermination(poolWaitTime, TimeUnit.MINUTES)) {
                 // Every 20 minutes that we're waiting for the pool to terminate,
                 // flush all the relevant logs and stuff. That way, we can
                 // safely interrupt after waiting a reasonable amount of time.
@@ -66,6 +67,8 @@ public class SWFScanner {
             synchronized (System.out) {
                 System.out.println("awaitTermination interrupted, exiting!");
             }
+            // Do some cleanup.
+            this.config.cleanUp();
             System.exit(3);
         }
     }
