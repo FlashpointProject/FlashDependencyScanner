@@ -3,6 +3,7 @@ package src.swf;
 import java.util.ArrayList;
 import java.util.List;
 import org.json.JSONObject;
+import static src.DependencyChecker.DEBUG;
 
 public class SWFTerms {
     private List<String> _termRate;
@@ -23,12 +24,27 @@ public class SWFTerms {
         }*/
         for (Object element : terms.getJSONArray("requiredTerms").toList()) {
             _termRequired.add((String)element);
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("Adding required term: " + (String)element);
+                }
+            }
         }
         for (Object element : terms.getJSONArray("hitTerms").toList()) {
             _termRate.add((String)element);
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("Adding include function: " + (String)element);
+                }
+            }
         }
         for (Object element : terms.getJSONArray("hitExtensions").toList()) {
             addTermRateExt((String)element);
+            if (DEBUG) {
+                synchronized (System.out) {
+                    System.out.println("Adding extension: " + (String)element);
+                }
+            }
         }
         /*
         _termRequired.add("URLRequest");
