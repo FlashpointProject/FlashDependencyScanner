@@ -1,14 +1,19 @@
 package src.swf;
 
 import java.util.concurrent.*;
+
+import src.SynchronizedCounter;
+
 import java.io.*;
 
 import static src.Macros.DEBUG_TASKPOOL;
 
 public class SWFScanner {
     private SWFConfig config;
-    // private SWFProcessHost _ph;
-    // private SWFProcessClient _pc;
+    private SynchronizedCounter numDone = new SynchronizedCounter(0);
+    private SynchronizedCounter numQueued = new SynchronizedCounter(0);
+    // Declared volatile, so all accesses are synchronized.
+    private volatile boolean keepLogging = true;
     public ThreadPoolExecutor fileTaskPool;
     private String ext = "swf";
     private int maxDepth;
@@ -29,6 +34,29 @@ public class SWFScanner {
      * Start scanning and wait for it to complete.
      */
     public void scan() {
+        // We're at loggerthreads now, eh?
+        Thread loggerThread = new Thread(() -> {
+            // While we should keep logging,
+            while (keepLogging) {
+                // Log a status message.
+                synchronized (System.out) {
+                    // Note the \r at the end, to bring us back to the beginning of the line.
+                    // This will (I hope) rewrite the same line over and over again.
+                    System.out.print("Files done: " + numDone.getCount() + "/" + numQueued.getCount() + '\r');
+                }
+                try {
+                    // Wait half a second, then log the next status message.
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+            synchronized (System.out) {
+                System.out.println("All files finished: " + numDone.getCount() + "/" + numQueued.getCount());
+            }
+        });
+        // Start the logging thread.
+        loggerThread.start();
         // We start with zero files scanned.
         Integer totalScanned = 0;
         // For each file that we were supposed to scan,
@@ -69,9 +97,18 @@ public class SWFScanner {
             synchronized (System.out) {
                 System.out.println("awaitTermination interrupted, exiting!");
             }
+            // Stop the logs.
+            keepLogging = false;
             // Do some cleanup.
             this.config.cleanUp();
             System.exit(3);
+        }
+        // Stop the logs.
+        keepLogging = false;
+        if (DEBUG_TASKPOOL) {
+            synchronized (System.out) {
+                System.out.println("Exiting SWFScanner.");
+            }
         }
     }
 
@@ -99,6 +136,8 @@ public class SWFScanner {
         fileTaskPool.submit(() -> {
             ScanFile(swf);
         });
+        // We queued one, increment the counter.
+        numQueued.increment();
     }
 
     /**
@@ -142,6 +181,8 @@ public class SWFScanner {
                     System.out.println("wrote to log.");
                 }
             }
+            // We've finished this file, increment the counter.
+            numDone.increment();
         } catch (Exception e) {
             synchronized (System.out) {
                 System.out.println("Error scanning file: " + e.toString());
@@ -236,4 +277,19 @@ public class SWFScanner {
         else
             return "";
     }
+    /**
+     * Gets whether or not we should keep logging.
+     * @return The keepLogging variable.
+     */
+    /*public synchronized boolean getKeepLogging() {
+        return keepLogging;
+    }
+
+    /**
+     * Set keepLogging to a new value.
+     * @param newValue The value to set it to.
+     */
+    /*public synchronized void setKeepLogging(boolean newValue) {
+        keepLogging = newValue;
+    }*/
 }
