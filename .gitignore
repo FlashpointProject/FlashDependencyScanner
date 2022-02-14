@@ -5,3 +5,4 @@ build
 processedfiles.csv
 SWFScan_*
 *.swf
+*.swp
