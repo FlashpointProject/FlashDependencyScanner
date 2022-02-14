@@ -13,7 +13,11 @@ public class DependencyChecker {
         SWFConfig c = SWFConfig.ParseCLI(args);
 
         // Prevent the library from using System.err.println();
-        PrintStream dummy = new PrintStream(new OutputStream() {@Override public void write(int b){} });
+        PrintStream dummy = new PrintStream(new OutputStream() {
+            @Override
+            public void write(int b) {
+            }
+        });
         System.setErr(dummy);
 
         // Start scanning the files.

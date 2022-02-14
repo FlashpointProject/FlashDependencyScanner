@@ -34,6 +34,7 @@ public class SWFDecompiler {
     private Map<String, Integer> term_freq;
     private OutputDetail loglevel;
     private String filepath;
+    private Integer score = 0;
 
     public SWFDecompiler(File infile, OutputDetail detail, SWFTerms inputTerms) {
         this.terms = inputTerms;
@@ -189,7 +190,9 @@ public class SWFDecompiler {
                     en.toSource(htw, abc.script_info.get(s).traits.traits, new ConvertData(), sem, false);
                     // found gets or-ed with the result. If we found something and we're not looking
                     // for more,
-                    if ((found |= scanScript(htw.toString())) && loglevel != OutputDetail.PATH_VAL_ALLHITS) {
+                    if ((found |= scanScript(htw.toString()))
+                            && loglevel != OutputDetail.PATH_VAL_ALLHITS
+                            && loglevel != OutputDetail.PATH_VAL_ALLHITS_SCORE) {
                         // Bail out.
                         return true;
                     }
@@ -207,7 +210,9 @@ public class SWFDecompiler {
                 }
                 String as = writer.toString();
                 // If we found something and we're not looking for more,
-                if ((found |= scanScript(as)) && loglevel != OutputDetail.PATH_VAL_ALLHITS) {
+                if ((found |= scanScript(as))
+                        && loglevel != OutputDetail.PATH_VAL_ALLHITS
+                        && loglevel != OutputDetail.PATH_VAL_ALLHITS_SCORE) {
                     // Bail out.
                     return true;
                 }
@@ -232,7 +237,7 @@ public class SWFDecompiler {
         }
 
         // If we're looking for terms, continue.
-        for (String term : terms.getTermRateList()) {
+        for (String term : terms.getTermRateList().keySet()) {
             if (checkTermData(term, script)) {
                 // If we're only looking for the first hit, don't continue.
                 if (loglevel == OutputDetail.PATH_VAL_HIT) {
@@ -297,7 +302,8 @@ public class SWFDecompiler {
                 // We found something!
                 foundSomething = true;
                 // If we're looking for all the hits,
-                if (loglevel == OutputDetail.PATH_VAL_ALLHITS) {
+                if (loglevel == OutputDetail.PATH_VAL_ALLHITS
+                        || loglevel == OutputDetail.PATH_VAL_ALLHITS_SCORE) {
                     // Keep searching, so that we get them all
                     // Increment so that we don't double-count this one.
                     index++;
@@ -328,6 +334,11 @@ public class SWFDecompiler {
         } else {
             // Increment the count by one.
             this.term_freq.put(term, ++cnt);
+        }
+        // If we're tracking the score,
+        if (loglevel == OutputDetail.PATH_VAL_ALLHITS_SCORE) {
+            // Increment the score by the proper weight.
+            score += this.terms.getTermRateList().get(term);
         }
     }
 }

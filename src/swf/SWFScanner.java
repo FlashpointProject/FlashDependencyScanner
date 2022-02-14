@@ -14,7 +14,8 @@ public class SWFScanner {
     private int maxDepth;
     // The number of tasks to keep around per thread in the queue.
     public static final int maxQueueFactor = 20;
-    // The increment of time, in minutes, to wait between log flushes when the pool is exiting.
+    // The increment of time, in minutes, to wait between log flushes when the pool
+    // is exiting.
     public static final int poolWaitTime = 20;
 
     public SWFScanner(SWFConfig c) {
@@ -55,7 +56,8 @@ public class SWFScanner {
             // This condition should take poolWaitTime minutes to evaluate, at maximum.
             // Whenever it gets a timeout, it will return false, and loop around.
             // Whenever the pool actually terminates, it will return true, and continue.
-            // If it just terminates nicely on the first try, fear not: the files are flushed at closing time, later on.
+            // If it just terminates nicely on the first try, fear not: the files are
+            // flushed at closing time, later on.
             while (!fileTaskPool.awaitTermination(poolWaitTime, TimeUnit.MINUTES)) {
                 // Every 20 minutes that we're waiting for the pool to terminate,
                 // flush all the relevant logs and stuff. That way, we can
