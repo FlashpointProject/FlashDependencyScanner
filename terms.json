@@ -207,7 +207,7 @@
         {
             "ext":".hx",
             "weight":3
-        },;
+        },
         {
             "ext":".properties",
             "weight":2
