@@ -102,6 +102,8 @@ public class SWFDecompiler {
         if (loglevel == OutputDetail.PATH_VAL) {
             // Btw, using the ternary operator here to convert bool->int.
             return this.filepath + ',' + (found ? 1 : 0) + System.lineSeparator();
+        } else if (loglevel == OutputDetail.PATH_VAL_ALLHITS_SCORE){
+            return this.filepath + ',' + (found ? 1 : 0) + ',' + joinTermMap() + ',' + this.score + System.lineSeparator();
         } else {
             // If we're logging terms, include those.
             return this.filepath + ',' + (found ? 1 : 0) + ',' + joinTermMap() + System.lineSeparator();
