@@ -11,4 +11,7 @@ public class Macros {
 
     // Print messages about the tasks, pool, and file-scanning.
     public static final boolean DEBUG_TASKPOOL = false;
+
+    // Print messages about the flow of the whole program.
+    public static final boolean DEBUG_MAIN = false;
 }

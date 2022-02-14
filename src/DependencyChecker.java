@@ -1,11 +1,19 @@
 package src;
 
-import java.io.*;
-import src.swf.*;
+import java.io.PrintStream;
+import java.io.OutputStream;
+import src.swf.SWFConfig;
+import src.swf.SWFScanner;
+import static src.Macros.DEBUG_MAIN;;
 
 public class DependencyChecker {
 
     public static void main(String[] args) {
+        if (DEBUG_MAIN) {
+            synchronized (System.out) {
+                System.out.println("Startup, parsing args.");
+            }
+        }
         // Parse the commandline
         SWFConfig c = SWFConfig.ParseCLI(args);
 
@@ -17,11 +25,28 @@ public class DependencyChecker {
         });
         System.setErr(dummy);
 
+        if (DEBUG_MAIN) {
+            synchronized (System.out) {
+                System.out.println("Starting scanning.");
+            }
+        }
+
         // Start scanning the files.
         SWFScanner swfc = new SWFScanner(c);
         // Scan the files, and wait for exit.
         swfc.scan();
+        if (DEBUG_MAIN) {
+            synchronized (System.out) {
+                System.out.println("Scanning done, starting cleanup.");
+            }
+        }
         // Close the files, etc.
         c.cleanUp();
+        if (DEBUG_MAIN) {
+            synchronized (System.out) {
+                System.out.println("Exiting.");
+            }
+        }
+        // Um... looks like the program is hanging here? I don't understand why.
     }
 }
