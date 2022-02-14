@@ -20,7 +20,7 @@ import com.jpexs.decompiler.flash.tags.ABCContainerTag;
 import com.jpexs.decompiler.flash.tags.base.ASMSource;
 
 import src.swf.SWFConfig.OutputDetail;
-import static src.DependencyChecker.DEBUG;
+import static src.Macros.DEBUG_DECOMPILATION;
 
 public class SWFDecompiler {
     // DeobfuscationLevel level = DeobfuscationLevel.getByLevel(1);
@@ -41,32 +41,32 @@ public class SWFDecompiler {
         this.term_freq = new HashMap<String, Integer>();
         this.loglevel = detail;
         try {
-            if (DEBUG) {
+            if (DEBUG_DECOMPILATION) {
                 synchronized (System.out) {
                     System.out.println("Decompiling: " + infile.getPath());
                 }
             }
             // Use jpexs to decompile the swf.
             BufferedInputStream swf_stream = new BufferedInputStream(new FileInputStream(infile.getPath()));
-            if (DEBUG) {
+            if (DEBUG_DECOMPILATION) {
                 synchronized (System.out) {
                     System.out.println("opened stream.");
                 }
             }
             this.swf = new SWF(swf_stream, false);
-            if (DEBUG) {
+            if (DEBUG_DECOMPILATION) {
                 synchronized (System.out) {
                     System.out.println("Created SWF object.");
                 }
             }
             swf_stream.close();
-            if (DEBUG) {
+            if (DEBUG_DECOMPILATION) {
                 synchronized (System.out) {
                     System.out.println("closed stream.");
                 }
             }
             this.filepath = infile.getCanonicalPath();
-            if (DEBUG) {
+            if (DEBUG_DECOMPILATION) {
                 synchronized (System.out) {
                     System.out.println("set filepath");
                 }
@@ -144,7 +144,7 @@ public class SWFDecompiler {
      * @throws Exception If an error occured.
      */
     public boolean scanFile(Boolean getPcode) throws Exception {
-        if (DEBUG) {
+        if (DEBUG_DECOMPILATION) {
             synchronized (System.out) {
                 System.out.println("SWFDecompiler.scanFile called");
             }

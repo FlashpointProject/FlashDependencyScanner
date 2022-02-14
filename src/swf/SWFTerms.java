@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.json.JSONObject;
-import static src.DependencyChecker.DEBUG;
+import static src.Macros.DEBUG_TERMS;;
 
 public class SWFTerms {
     private HashMap<String, Integer> _termRate;
@@ -25,7 +25,7 @@ public class SWFTerms {
             // Cast to string and add the element.
             _termRequired.add((String) element);
             // If we're debugging, log a message.
-            if (DEBUG) {
+            if (DEBUG_TERMS) {
                 synchronized (System.out) {
                     System.out.println("Adding required term: " + (String) element);
                 }
@@ -36,7 +36,7 @@ public class SWFTerms {
             // Cast to a string, and add it with zero weight.
             _termRate.put((String) element, 0);
             // If we're debugging, log a message.
-            if (DEBUG) {
+            if (DEBUG_TERMS) {
                 synchronized (System.out) {
                     System.out.println("Adding include function: " + (String) element);
                 }
@@ -51,7 +51,7 @@ public class SWFTerms {
 
     public void addTermRateExt(String term, Integer weight) {
         // If we're debugging, log a message.
-        if (DEBUG) {
+        if (DEBUG_TERMS) {
             synchronized (System.out) {
                 System.out.println("Adding extension: \"" + term + "\" with weight: " + weight);
             }

@@ -102,14 +102,14 @@ public class SWFConfig {
             System.exit(1);
         }
         // We have to do this first: it's declared final.
-        SWFConfig c = new SWFConfig(readJsonFile(results.getString("jsonfile"))); // TODO
+        SWFConfig c = new SWFConfig(readJsonFile(results.getString("jsonfile"))); // Implemented.
         // Now to actually set all of these things.
         c.setPcode(results.getString("pcode").equals("pcode")); // Implemented
         c.setSSF(results.getBoolean("ssf")); // Implemented.
         c.setMaxDepth(results.getInt("maxdepth")); // Implemented.
         c.setScanLimit(results.getInt("scanlimit")); // Implemented.
         c.setOutputFilePath(results.getString("output")); // Implemented.
-        c.setOutputDetailLevel(results.getInt("detail")); // TODO
+        c.setOutputDetailLevel(results.getInt("detail")); // Implemented.
         c.setThreadCount(results.getInt("threads")); // Implemented.
         // Note: read the ignore before opening the processed list.
         c.setIgnoreListPath(results.getString("ignorelist")); // Implemented

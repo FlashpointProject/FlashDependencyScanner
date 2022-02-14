@@ -4,9 +4,6 @@ import java.io.*;
 import src.swf.*;
 
 public class DependencyChecker {
-    // Because it's final, it can be used like a C macro.
-    // The java compiler will remove if (DEBUG) when DEBUG is false.
-    public static final boolean DEBUG = false;
 
     public static void main(String[] args) {
         // Parse the commandline
