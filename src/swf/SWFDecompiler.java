@@ -189,7 +189,7 @@ public class SWFDecompiler {
                         }
                     }
 
-                    en.toSource(htw, abc.script_info.get(s).traits.traits, new ConvertData(), sem, false);
+                    en.toSource(htw, abc.script_info.get(s).traits.traits, new ConvertData(), sem, false, false);
                     // found gets or-ed with the result. If we found something and we're not looking
                     // for more,
                     if ((found |= scanScript(htw.toString()))
