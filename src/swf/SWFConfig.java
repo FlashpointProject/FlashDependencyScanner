@@ -453,6 +453,7 @@ public class SWFConfig {
                 break;
             case 4:
                 setOutputDetailLevel(OutputDetail.PATH_VAL_ALLHITS_SCORE);
+                break;
             default:
                 // Should never happen: the parser should give us a nice value.
                 setOutputDetailLevel(OutputDetail.PATH_VAL);
