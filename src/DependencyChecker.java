@@ -48,5 +48,9 @@ public class DependencyChecker {
             }
         }
         // Um... looks like the program is hanging here? I don't understand why.
+        // Let's tell the user that it's safe to interrupt us now.
+        synchronized (System.out) {
+            System.out.println("Scanning complete. It is now safe to interrupt.");
+        }
     }
 }
