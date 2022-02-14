@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -391,7 +392,10 @@ public class SWFConfig {
                 this.ignoreList.add(line);
             }
             reader.close();
-        } catch (IOException e) {
+        } catch (FileNotFoundException fne) {
+            // This is fine - if the file wasn't found, we're supposed to have an empty ignorelist.
+        }
+        catch (IOException e) {
             // If there was an error, yell at the user.
             System.out.println("Error while reading ignore list: " + e.toString());
             System.exit(2);
