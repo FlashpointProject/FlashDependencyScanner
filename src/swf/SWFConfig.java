@@ -39,6 +39,7 @@ public class SWFConfig {
     private ReentrantLock processedFile_lock = new ReentrantLock();
     private List<String> ignoreList;
     private List<String> files = new ArrayList<String>();
+    private boolean progresslog;
     public final SWFTerms terms;
 
     // The constructor sets terms only.
@@ -87,6 +88,9 @@ public class SWFConfig {
         parser.addArgument("--terms-file").help("Set the name of the json file from which we should load terms.")
                 .action(Arguments.store())
                 .dest("jsonfile").setDefault("terms.json").type(String.class);
+        parser.addArgument("-p", "--progress").help("Display some minimal progress information throughout the scan.")
+                .dest("progresslog").action(Arguments.storeConst()).setDefault(false).setConst(true)
+                .type(boolean.class);
         // Note that the type is different for these two. This makes it easy to
         // determine which one was used.
         parser.addArgument("--file-list")
@@ -112,6 +116,7 @@ public class SWFConfig {
         c.setOutputFilePath(results.getString("output")); // Implemented.
         c.setOutputDetailLevel(results.getInt("detail")); // Implemented.
         c.setThreadCount(results.getInt("threads")); // Implemented.
+        c.setProgressLog(results.getBoolean("progresslog"));
         // Note: read the ignore before opening the processed list.
         c.setIgnoreListPath(results.getString("ignorelist")); // Implemented
         c.setProcessedListFile(results.getString("processedlist")); // Implemented.
@@ -393,13 +398,21 @@ public class SWFConfig {
             }
             reader.close();
         } catch (FileNotFoundException fne) {
-            // This is fine - if the file wasn't found, we're supposed to have an empty ignorelist.
-        }
-        catch (IOException e) {
+            // This is fine - if the file wasn't found, we're supposed to have an empty
+            // ignorelist.
+        } catch (IOException e) {
             // If there was an error, yell at the user.
             System.out.println("Error while reading ignore list: " + e.toString());
             System.exit(2);
         }
+    }
+
+    public boolean getProgressLog() {
+        return this.progresslog;
+    }
+
+    public void setProgressLog(boolean newValue) {
+        this.progresslog = newValue;
     }
 
     public boolean getPcode() {

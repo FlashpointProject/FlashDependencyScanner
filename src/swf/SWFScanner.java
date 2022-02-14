@@ -34,29 +34,32 @@ public class SWFScanner {
      * Start scanning and wait for it to complete.
      */
     public void scan() {
-        // We're at loggerthreads now, eh?
-        Thread loggerThread = new Thread(() -> {
-            // While we should keep logging,
-            while (keepLogging) {
-                // Log a status message.
+        // If we're logging, set up the logging thread.
+        if (this.config.getProgressLog()) {
+            // We're at loggerthreads now, eh?
+            Thread loggerThread = new Thread(() -> {
+                // While we should keep logging,
+                while (keepLogging) {
+                    // Log a status message.
+                    synchronized (System.out) {
+                        // Note the \r at the end, to bring us back to the beginning of the line.
+                        // This will (I hope) rewrite the same line over and over again.
+                        System.out.print("Files done: " + numDone.getCount() + "/" + numQueued.getCount() + '\r');
+                    }
+                    try {
+                        // Wait half a second, then log the next status message.
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
                 synchronized (System.out) {
-                    // Note the \r at the end, to bring us back to the beginning of the line.
-                    // This will (I hope) rewrite the same line over and over again.
-                    System.out.print("Files done: " + numDone.getCount() + "/" + numQueued.getCount() + '\r');
+                    System.out.println("All files finished: " + numDone.getCount() + "/" + numQueued.getCount());
                 }
-                try {
-                    // Wait half a second, then log the next status message.
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    break;
-                }
-            }
-            synchronized (System.out) {
-                System.out.println("All files finished: " + numDone.getCount() + "/" + numQueued.getCount());
-            }
-        });
-        // Start the logging thread.
-        loggerThread.start();
+            });
+            // Start the logging thread.
+            loggerThread.start();
+        }
         // We start with zero files scanned.
         Integer totalScanned = 0;
         // For each file that we were supposed to scan,
@@ -279,17 +282,22 @@ public class SWFScanner {
     }
     /**
      * Gets whether or not we should keep logging.
+     * 
      * @return The keepLogging variable.
      */
-    /*public synchronized boolean getKeepLogging() {
-        return keepLogging;
-    }
-
-    /**
+    /*
+     * public synchronized boolean getKeepLogging() {
+     * return keepLogging;
+     * }
+     * 
+     * /**
      * Set keepLogging to a new value.
+     * 
      * @param newValue The value to set it to.
      */
-    /*public synchronized void setKeepLogging(boolean newValue) {
-        keepLogging = newValue;
-    }*/
+    /*
+     * public synchronized void setKeepLogging(boolean newValue) {
+     * keepLogging = newValue;
+     * }
+     */
 }
