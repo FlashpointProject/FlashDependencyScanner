@@ -1,3 +1,11 @@
 processedFiles.csv
 4399 At Risk.csv
 Taking too Long.txt
+build
+processedfiles.csv
+SWFScan_*
+*.swf
+*.swp
+
+# Ignore Gradle project-specific cache directory
+.gradle

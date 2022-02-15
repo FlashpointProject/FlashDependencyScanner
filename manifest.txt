@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
-Created-By: 1.8.256 (Oracle Corporation)
 Main-Class: src.DependencyChecker
-Class-Path: ffdec_lib.jar metaas-0.8.jar LZMA.jar cmykjpeg.jar gson-2.4.jar
+Class-Path: ffdec_lib.jar argparse4j-0.9.0.jar json-20211205.jar
+
