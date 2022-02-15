@@ -1,8 +1,9 @@
 # FlashDependencyScanner
 Scans flash files to check and see the possibility of external dependencies
 
-Requires Java 8. Build it with `./build.sh` or `.\build.bat`, depending on your platform.  
-Run with `./run.sh` or `.\run.bat`, depending on your platform.
+Requires Java 8.  
+Build it with `./gradlew build` or `.\gradlew.bat build`, depending on your platform.  
+That will create an archive with the binaries at `flashdeps/build/distributions`. Extract whichever achive you like, and run it with the appropriate script or batchfile, depending on your platform.
 
 This program is licensed under the [MIT License](licenses/FlashDependencyScanner/LICENSE).
 
