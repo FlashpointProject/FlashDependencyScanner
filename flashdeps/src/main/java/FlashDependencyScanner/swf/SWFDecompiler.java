@@ -1,4 +1,4 @@
-package src.swf;
+package FlashDependencyScanner.swf;
 
 import java.io.FileInputStream;
 import java.io.BufferedInputStream;
@@ -19,8 +19,8 @@ import com.jpexs.decompiler.flash.helpers.CodeFormatting;
 import com.jpexs.decompiler.flash.tags.ABCContainerTag;
 import com.jpexs.decompiler.flash.tags.base.ASMSource;
 
-import src.swf.SWFConfig.OutputDetail;
-import static src.Macros.DEBUG_DECOMPILATION;
+import FlashDependencyScanner.swf.SWFConfig.OutputDetail;
+import static FlashDependencyScanner.Macros.DEBUG_DECOMPILATION;
 
 public class SWFDecompiler {
     // DeobfuscationLevel level = DeobfuscationLevel.getByLevel(1);

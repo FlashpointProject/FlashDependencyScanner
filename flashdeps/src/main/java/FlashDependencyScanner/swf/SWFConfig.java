@@ -1,4 +1,4 @@
-package src.swf;
+package FlashDependencyScanner.swf;
 
 import java.util.ArrayList;
 import java.util.List;

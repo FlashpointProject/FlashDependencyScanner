@@ -1,4 +1,4 @@
-package src;
+package FlashDependencyScanner;
 
 public class Macros {
     // Because they're final, each of these can be used like a C macro.

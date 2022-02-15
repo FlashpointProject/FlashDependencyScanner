@@ -1,10 +1,10 @@
-package src;
+package FlashDependencyScanner;
 
 import java.io.PrintStream;
 import java.io.OutputStream;
-import src.swf.SWFConfig;
-import src.swf.SWFScanner;
-import static src.Macros.DEBUG_MAIN;;
+import FlashDependencyScanner.swf.SWFConfig;
+import FlashDependencyScanner.swf.SWFScanner;
+import static FlashDependencyScanner.Macros.DEBUG_MAIN;;
 
 public class DependencyChecker {
 

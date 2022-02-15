@@ -1,12 +1,12 @@
-package src.swf;
+package FlashDependencyScanner.swf;
 
 import java.util.concurrent.*;
 
-import src.SynchronizedCounter;
+import FlashDependencyScanner.SynchronizedCounter;
 
 import java.io.*;
 
-import static src.Macros.DEBUG_TASKPOOL;
+import static FlashDependencyScanner.Macros.DEBUG_TASKPOOL;
 
 public class SWFScanner {
     private SWFConfig config;

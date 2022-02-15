@@ -6,3 +6,6 @@ processedfiles.csv
 SWFScan_*
 *.swf
 *.swp
+
+# Ignore Gradle project-specific cache directory
+.gradle

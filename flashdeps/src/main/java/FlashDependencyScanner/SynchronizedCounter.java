@@ -1,4 +1,4 @@
-package src;
+package FlashDependencyScanner;
 
 public class SynchronizedCounter {
     private int count;

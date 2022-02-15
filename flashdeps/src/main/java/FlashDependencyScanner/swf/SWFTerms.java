@@ -1,11 +1,11 @@
-package src.swf;
+package FlashDependencyScanner.swf;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import org.json.JSONObject;
-import static src.Macros.DEBUG_TERMS;;
+import static FlashDependencyScanner.Macros.DEBUG_TERMS;;
 
 public class SWFTerms {
     private HashMap<String, Integer> _termRate;
